@@ -56,16 +56,17 @@ final class DramaStreamController extends Controller
 
         // Build embed URL as fallback when HLS extraction fails
         $embedUrl = null;
-        $currentEpisode = collect($drama['episodes'] ?? [])->firstWhere('id', $episodeId);
+        $isMovie = ($drama['type'] ?? '') === 'Movie' || str_starts_with($id, 'movie/');
+        $tmdbType = $isMovie ? 'Movie' : 'TV Series';
+        $tmdbId = $consumet->findTmdbId($drama['title'] ?? '', $tmdbType);
 
-        if ($currentEpisode) {
-            $tmdbId = $consumet->findTmdbId($drama['title'] ?? '', 'TV Series');
-
-            if ($tmdbId) {
-                $season = $currentEpisode['season'] ?? 1;
-                $episode = $currentEpisode['number'] ?? 1;
-                $embedUrl = "https://vidlink.pro/tv/{$tmdbId}/{$season}/{$episode}";
-            }
+        if ($tmdbId && $isMovie) {
+            $embedUrl = "https://vidlink.pro/movie/{$tmdbId}";
+        } elseif ($tmdbId) {
+            $currentEpisode = collect($drama['episodes'] ?? [])->firstWhere('id', $episodeId);
+            $season = $currentEpisode['season'] ?? 1;
+            $episode = $currentEpisode['number'] ?? 1;
+            $embedUrl = "https://vidlink.pro/tv/{$tmdbId}/{$season}/{$episode}";
         }
 
         $progress = null;
