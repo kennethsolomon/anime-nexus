@@ -22,14 +22,14 @@ it('saves watch progress', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->postJson(route('history.store'), [
+        ->post(route('history.store'), [
             'anime_id' => 'naruto',
             'episode_id' => 'naruto-ep-1',
             'episode_number' => 1,
             'progress_seconds' => 300,
             'completed' => false,
         ])
-        ->assertJson(['status' => 'ok']);
+        ->assertRedirect();
 
     $this->assertDatabaseHas('watch_histories', [
         'user_id' => $user->id,
@@ -44,7 +44,7 @@ it('updates existing watch progress', function (): void {
     $user = User::factory()->create();
 
     // First save
-    $this->actingAs($user)->postJson(route('history.store'), [
+    $this->actingAs($user)->post(route('history.store'), [
         'anime_id' => 'naruto',
         'episode_id' => 'naruto-ep-1',
         'episode_number' => 1,
@@ -52,7 +52,7 @@ it('updates existing watch progress', function (): void {
     ]);
 
     // Second save (update)
-    $this->actingAs($user)->postJson(route('history.store'), [
+    $this->actingAs($user)->post(route('history.store'), [
         'anime_id' => 'naruto',
         'episode_id' => 'naruto-ep-1',
         'episode_number' => 1,
@@ -69,14 +69,14 @@ it('marks episode as completed', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->postJson(route('history.store'), [
+        ->post(route('history.store'), [
             'anime_id' => 'naruto',
             'episode_id' => 'naruto-ep-1',
             'episode_number' => 1,
             'progress_seconds' => 0,
             'completed' => true,
         ])
-        ->assertJson(['status' => 'ok']);
+        ->assertRedirect();
 
     $this->assertDatabaseHas('watch_histories', [
         'completed' => true,

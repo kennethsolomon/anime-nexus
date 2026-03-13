@@ -1,9 +1,10 @@
+import ApplicationLogo from '@/Components/ApplicationLogo';
 import EpisodeList from '@/Components/EpisodeList';
 import VideoPlayer from '@/Components/VideoPlayer';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { AnimeInfo, StreamingResponse } from '@/types/anime';
-import { Head, router, usePage } from '@inertiajs/react';
-import { useCallback } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useCallback, useState } from 'react';
 
 interface WatchProps {
     anime: AnimeInfo;
@@ -12,12 +13,44 @@ interface WatchProps {
     progress: number;
 }
 
+function GuestNav() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            router.get(route('anime.search'), { q: searchQuery });
+        }
+    };
+
+    return (
+        <nav className="sticky top-0 z-50 border-b border-subtle bg-surface">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <Link href="/" className="shrink-0">
+                    <ApplicationLogo />
+                </Link>
+                <form onSubmit={handleSearch} className="hidden flex-1 sm:mx-8 sm:block sm:max-w-md">
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search anime..."
+                        className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-10 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
+                    />
+                </form>
+                <div className="flex items-center gap-3">
+                    <Link href={route('login')} className="text-sm text-theme-secondary hover:text-primary">Log in</Link>
+                    <Link href={route('register')} className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-base hover:bg-secondary-hover">Register</Link>
+                </div>
+            </div>
+        </nav>
+    );
+}
+
 function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
     const { auth } = usePage().props as {
         auth?: { user?: { id: number } };
     };
 
-    // Find best quality source (prefer auto/default, then highest)
     const source =
         streaming.sources?.find((s) => s.quality === 'default' || s.quality === 'auto') ||
         streaming.sources?.find((s) => s.isM3U8) ||
@@ -40,6 +73,8 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                 route('history.store'),
                 {
                     anime_id: anime.id,
+                    anime_title: anime.title,
+                    anime_image: anime.image,
                     episode_id: episodeId,
                     episode_number: currentEpisode.number,
                     progress_seconds: seconds,
@@ -48,7 +83,7 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                 { preserveScroll: true, preserveState: true },
             );
         },
-        [auth, anime.id, episodeId, currentEpisode],
+        [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode],
     );
 
     const handleEnded = useCallback(() => {
@@ -57,6 +92,8 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                 route('history.store'),
                 {
                     anime_id: anime.id,
+                    anime_title: anime.title,
+                    anime_image: anime.image,
                     episode_id: episodeId,
                     episode_number: currentEpisode.number,
                     progress_seconds: 0,
@@ -65,7 +102,6 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                 { preserveScroll: true, preserveState: true },
             );
         }
-        // Auto-play next episode
         if (nextEpisode) {
             router.get(
                 route('anime.watch', {
@@ -74,21 +110,21 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                 }),
             );
         }
-    }, [auth, anime.id, episodeId, currentEpisode, nextEpisode]);
+    }, [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode, nextEpisode]);
 
     if (streaming.error || !source) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                <div className="rounded-lg bg-red-900/30 p-8 text-center">
-                    <h2 className="text-xl font-bold text-red-400">
+                <div className="rounded-xl border border-danger/30 bg-danger/10 p-8 text-center">
+                    <h2 className="text-xl font-bold text-danger">
                         Failed to load video
                     </h2>
-                    <p className="mt-2 text-gray-400">
+                    <p className="mt-2 text-theme-secondary">
                         {streaming.message || 'Streaming source unavailable'}
                     </p>
                     <button
                         onClick={() => router.reload()}
-                        className="mt-4 rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
+                        className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover"
                     >
                         Retry
                     </button>
@@ -111,12 +147,14 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                             url={source.url}
                             subtitles={streaming.subtitles}
                             startAt={progress}
+                            intro={streaming.intro}
+                            outro={streaming.outro}
                             onProgress={saveProgress}
                             onEnded={handleEnded}
                         />
 
                         {/* Episode navigation */}
-                        <div className="mt-4 flex items-center justify-between">
+                        <div className="mt-4 flex items-center justify-between gap-2">
                             {prevEpisode ? (
                                 <button
                                     onClick={() =>
@@ -127,15 +165,18 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                                             }),
                                         )
                                     }
-                                    className="rounded-lg bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-muted bg-input px-4 py-2 text-sm text-primary transition hover:border-accent hover:bg-surface"
                                 >
-                                    Previous
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    EP {prevEpisode.number}
                                 </button>
                             ) : (
                                 <div />
                             )}
 
-                            <h2 className="text-lg font-semibold text-white">
+                            <h2 className="min-w-0 truncate text-center font-display text-lg font-semibold text-primary">
                                 {currentEpisode?.title ||
                                     `Episode ${currentEpisode?.number}`}
                             </h2>
@@ -150,13 +191,26 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                                             }),
                                         )
                                     }
-                                    className="rounded-lg bg-purple-600 px-4 py-2 text-sm text-white hover:bg-purple-700"
+                                    className="inline-flex items-center gap-1 rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-base transition hover:bg-secondary-hover"
                                 >
-                                    Next
+                                    EP {nextEpisode.number}
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </button>
                             ) : (
                                 <div />
                             )}
+                        </div>
+
+                        {/* Anime title link */}
+                        <div className="mt-3">
+                            <Link
+                                href={route('anime.show', { id: anime.id })}
+                                className="text-sm text-theme-secondary transition hover:text-accent"
+                            >
+                                {anime.title}
+                            </Link>
                         </div>
                     </div>
 
@@ -188,7 +242,8 @@ export default function Watch(props: WatchProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-950">
+        <div className="min-h-screen bg-base">
+            <GuestNav />
             <WatchContent {...props} />
         </div>
     );

@@ -20,13 +20,13 @@ export default function EpisodeList({
     watchedEpisodes = [],
 }: EpisodeListProps) {
     return (
-        <div className="max-h-96 overflow-y-auto rounded-lg bg-gray-800">
-            <div className="sticky top-0 border-b border-gray-700 bg-gray-800 px-4 py-2">
-                <h3 className="text-sm font-semibold text-white">
+        <div className="max-h-96 overflow-y-auto rounded-xl border border-subtle bg-surface">
+            <div className="sticky top-0 border-b border-subtle bg-surface px-4 py-2.5">
+                <h3 className="font-display text-sm font-semibold text-primary">
                     Episodes ({episodes.length})
                 </h3>
             </div>
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-subtle">
                 {episodes.map((episode) => {
                     const isActive = episode.id === currentEpisodeId;
                     const isWatched = watchedEpisodes.includes(episode.id);
@@ -38,19 +38,19 @@ export default function EpisodeList({
                                 id: animeId,
                                 episodeId: episode.id,
                             })}
-                            className={`flex items-center gap-3 px-4 py-3 transition hover:bg-gray-700 ${
+                            className={`flex items-center gap-3 px-4 py-3 transition hover:bg-input ${
                                 isActive
-                                    ? 'bg-purple-900/30 border-l-2 border-purple-500'
+                                    ? 'border-l-2 border-accent bg-accent/10'
                                     : ''
                             }`}
                         >
                             <span
-                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-bold ${
+                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded font-mono text-xs font-bold ${
                                     isActive
-                                        ? 'bg-purple-600 text-white'
+                                        ? 'bg-accent text-base'
                                         : isWatched
-                                          ? 'bg-green-600/20 text-green-400'
-                                          : 'bg-gray-700 text-gray-300'
+                                          ? 'bg-success/20 text-success'
+                                          : 'bg-input text-theme-secondary'
                                 }`}
                             >
                                 {episode.number}
@@ -58,14 +58,14 @@ export default function EpisodeList({
                             <span
                                 className={`truncate text-sm ${
                                     isActive
-                                        ? 'font-semibold text-white'
-                                        : 'text-gray-300'
+                                        ? 'font-semibold text-primary'
+                                        : 'text-theme-secondary'
                                 }`}
                             >
                                 {episode.title || `Episode ${episode.number}`}
                             </span>
                             {isWatched && !isActive && (
-                                <span className="ml-auto text-xs text-green-500">
+                                <span className="ml-auto text-xs text-success">
                                     Watched
                                 </span>
                             )}

@@ -16,10 +16,10 @@ const STATUSES = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-    watching: 'bg-blue-600',
-    plan_to_watch: 'bg-yellow-600',
-    completed: 'bg-green-600',
-    dropped: 'bg-red-600',
+    watching: 'bg-accent',
+    plan_to_watch: 'bg-secondary',
+    completed: 'bg-success',
+    dropped: 'bg-danger',
 };
 
 export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) {
@@ -34,16 +34,14 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    My Watchlist
-                </h2>
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Watchlist" />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <h1 className="mb-6 font-display text-2xl font-bold text-primary">
+                    My Watchlist
+                </h1>
+
                 {/* Status tabs */}
                 <div className="mb-6 flex flex-wrap gap-2">
                     {STATUSES.map((status) => (
@@ -56,8 +54,8 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                             }
                             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                                 currentStatus === status.value
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    ? 'bg-accent text-base'
+                                    : 'border border-muted bg-input text-theme-secondary hover:border-accent hover:text-primary'
                             }`}
                         >
                             {status.label}
@@ -71,7 +69,7 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                         {watchlist.map((item) => (
                             <div
                                 key={item.id}
-                                className="flex gap-3 rounded-lg bg-white p-4 shadow"
+                                className="flex gap-3 rounded-xl border border-subtle bg-surface p-4 transition hover:border-muted"
                             >
                                 <Link
                                     href={route('anime.show', {
@@ -83,10 +81,10 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                                         <img
                                             src={item.anime_image}
                                             alt={item.anime_title}
-                                            className="h-24 w-16 rounded object-cover"
+                                            className="h-24 w-16 rounded-lg object-cover"
                                         />
                                     ) : (
-                                        <div className="flex h-24 w-16 items-center justify-center rounded bg-gray-200 text-xs text-gray-400">
+                                        <div className="flex h-24 w-16 items-center justify-center rounded-lg bg-input text-xs text-theme-muted">
                                             No img
                                         </div>
                                     )}
@@ -96,20 +94,20 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                                         href={route('anime.show', {
                                             id: item.anime_id,
                                         })}
-                                        className="font-medium text-gray-900 hover:text-purple-600"
+                                        className="font-medium text-primary hover:text-accent"
                                     >
                                         {item.anime_title}
                                     </Link>
 
                                     <div className="mt-1">
                                         <span
-                                            className={`inline-block rounded px-2 py-0.5 text-xs text-white ${STATUS_COLORS[item.status] || 'bg-gray-600'}`}
+                                            className={`inline-block rounded px-2 py-0.5 text-xs font-medium text-white ${STATUS_COLORS[item.status] || 'bg-muted'}`}
                                         >
                                             {item.status.replace('_', ' ')}
                                         </span>
                                     </div>
 
-                                    <div className="mt-auto flex gap-1 pt-2">
+                                    <div className="mt-auto flex gap-2 pt-2">
                                         <select
                                             value={item.status}
                                             onChange={(e) =>
@@ -118,7 +116,7 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                                                     e.target.value,
                                                 )
                                             }
-                                            className="rounded border-gray-300 py-1 text-xs"
+                                            className="rounded-lg border-subtle bg-input py-1 text-xs text-primary focus:border-accent focus:ring-accent"
                                         >
                                             <option value="watching">
                                                 Watching
@@ -137,7 +135,7 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                                             onClick={() =>
                                                 handleRemove(item.id)
                                             }
-                                            className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
+                                            className="rounded-lg px-2 py-1 text-xs text-danger hover:bg-danger/10"
                                         >
                                             Remove
                                         </button>
@@ -147,9 +145,17 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                         ))}
                     </div>
                 ) : (
-                    <p className="text-gray-500">
-                        Your watchlist is empty. Browse anime and add some!
-                    </p>
+                    <div className="rounded-xl border border-subtle bg-surface p-8 text-center">
+                        <p className="text-theme-secondary">
+                            Your watchlist is empty.
+                        </p>
+                        <Link
+                            href={route('home')}
+                            className="mt-3 inline-block text-sm text-accent hover:text-accent-hover"
+                        >
+                            Browse anime to add some
+                        </Link>
+                    </div>
                 )}
             </div>
         </AuthenticatedLayout>

@@ -20,6 +20,8 @@ final class SaveProgressRequest extends FormRequest
     {
         return [
             'anime_id' => ['required', 'string', 'max:255'],
+            'anime_title' => ['sometimes', 'string', 'max:255'],
+            'anime_image' => ['sometimes', 'string', 'url', 'max:2048'],
             'episode_id' => ['required', 'string', 'max:255'],
             'episode_number' => ['required', 'integer', 'min:1'],
             'progress_seconds' => ['required', 'integer', 'min:0'],

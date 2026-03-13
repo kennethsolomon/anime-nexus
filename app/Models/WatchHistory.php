@@ -13,6 +13,8 @@ final class WatchHistory extends Model
     protected $fillable = [
         'user_id',
         'anime_id',
+        'anime_title',
+        'anime_image',
         'episode_id',
         'episode_number',
         'progress_seconds',

@@ -70,6 +70,8 @@ export interface WatchlistItem {
 export interface WatchHistoryItem {
     id: number;
     anime_id: string;
+    anime_title?: string;
+    anime_image?: string;
     episode_id: string;
     episode_number: number;
     progress_seconds: number;

@@ -1,69 +1,144 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { PropsWithChildren, useState } from 'react';
 
-export default function Authenticated({
-    header,
-    children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
+export default function Authenticated({ children }: PropsWithChildren) {
     const user = usePage().props.auth.user;
+    const [showingMobileMenu, setShowingMobileMenu] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            router.get(route('anime.search'), { q: searchQuery });
+        }
+    };
+
+    const initials = user.name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="border-b border-gray-100 bg-white">
+        <div className="min-h-screen bg-base">
+            <nav className="sticky top-0 z-50 border-b border-subtle bg-surface">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex">
-                            <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
-                                </Link>
-                            </div>
-
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('home')}
-                                    active={route().current('home')}
-                                >
-                                    Home
-                                </NavLink>
-                            </div>
+                    <div className="flex h-16 items-center justify-between gap-4">
+                        {/* Logo */}
+                        <div className="shrink-0">
+                            <Link href="/">
+                                <ApplicationLogo />
+                            </Link>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            <div className="relative ms-3">
+                        {/* Search */}
+                        <form
+                            onSubmit={handleSearch}
+                            className="hidden flex-1 sm:mx-8 sm:block sm:max-w-md"
+                        >
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    placeholder="Search anime..."
+                                    className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-10 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
+                                />
+                                <button
+                                    type="submit"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-secondary hover:text-primary"
+                                >
+                                    <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+
+                        {/* Right nav */}
+                        <div className="hidden items-center gap-1 sm:flex">
+                            <Link
+                                href={route('watchlist.index')}
+                                className={`rounded-lg p-2 transition ${
+                                    route().current('watchlist.*')
+                                        ? 'text-accent'
+                                        : 'text-theme-secondary hover:text-primary'
+                                }`}
+                                title="Watchlist"
+                            >
+                                <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                                    />
+                                </svg>
+                            </Link>
+                            <Link
+                                href={route('history.index')}
+                                className={`rounded-lg p-2 transition ${
+                                    route().current('history.*')
+                                        ? 'text-accent'
+                                        : 'text-theme-secondary hover:text-primary'
+                                }`}
+                                title="History"
+                            >
+                                <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                            </Link>
+
+                            <div className="relative ml-2">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {user.name}
-
-                                                <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
+                                        <button
+                                            type="button"
+                                            className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-base transition hover:bg-accent-hover"
+                                        >
+                                            {initials}
+                                        </button>
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
+                                        <div className="border-b border-subtle px-4 py-2">
+                                            <p className="text-sm font-medium text-primary">
+                                                {user.name}
+                                            </p>
+                                            <p className="text-xs text-theme-secondary">
+                                                {user.email}
+                                            </p>
+                                        </div>
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
@@ -81,14 +156,13 @@ export default function Authenticated({
                             </div>
                         </div>
 
-                        <div className="-me-2 flex items-center sm:hidden">
+                        {/* Mobile hamburger */}
+                        <div className="flex items-center sm:hidden">
                             <button
                                 onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
+                                    setShowingMobileMenu(!showingMobileMenu)
                                 }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
+                                className="rounded-lg p-2 text-theme-secondary hover:text-primary"
                             >
                                 <svg
                                     className="h-6 w-6"
@@ -98,7 +172,7 @@ export default function Authenticated({
                                 >
                                     <path
                                         className={
-                                            !showingNavigationDropdown
+                                            !showingMobileMenu
                                                 ? 'inline-flex'
                                                 : 'hidden'
                                         }
@@ -109,7 +183,7 @@ export default function Authenticated({
                                     />
                                     <path
                                         className={
-                                            showingNavigationDropdown
+                                            showingMobileMenu
                                                 ? 'inline-flex'
                                                 : 'hidden'
                                         }
@@ -124,54 +198,75 @@ export default function Authenticated({
                     </div>
                 </div>
 
+                {/* Mobile menu */}
                 <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
+                    className={`${showingMobileMenu ? 'block' : 'hidden'} border-t border-subtle sm:hidden`}
                 >
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('home')}
-                            active={route().current('home')}
-                        >
-                            Home
-                        </ResponsiveNavLink>
+                    {/* Mobile search */}
+                    <div className="px-4 py-3">
+                        <form onSubmit={handleSearch}>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) =>
+                                    setSearchQuery(e.target.value)
+                                }
+                                placeholder="Search anime..."
+                                className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-4 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
+                            />
+                        </form>
                     </div>
 
-                    <div className="border-t border-gray-200 pb-1 pt-4">
+                    <div className="space-y-1 pb-3">
+                        <Link
+                            href={route('home')}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-theme-secondary hover:bg-input hover:text-primary"
+                        >
+                            Home
+                        </Link>
+                        <Link
+                            href={route('watchlist.index')}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-theme-secondary hover:bg-input hover:text-primary"
+                        >
+                            Watchlist
+                        </Link>
+                        <Link
+                            href={route('history.index')}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-theme-secondary hover:bg-input hover:text-primary"
+                        >
+                            History
+                        </Link>
+                    </div>
+
+                    <div className="border-t border-subtle pb-3 pt-4">
                         <div className="px-4">
-                            <div className="text-base font-medium text-gray-800">
+                            <div className="text-sm font-medium text-primary">
                                 {user.name}
                             </div>
-                            <div className="text-sm font-medium text-gray-500">
+                            <div className="text-xs text-theme-secondary">
                                 {user.email}
                             </div>
                         </div>
 
                         <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
+                            <Link
+                                href={route('profile.edit')}
+                                className="flex px-4 py-2 text-sm text-theme-secondary hover:bg-input hover:text-primary"
+                            >
                                 Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
+                            </Link>
+                            <Link
                                 href={route('logout')}
+                                method="post"
                                 as="button"
+                                className="flex w-full px-4 py-2 text-sm text-theme-secondary hover:bg-input hover:text-primary"
                             >
                                 Log Out
-                            </ResponsiveNavLink>
+                            </Link>
                         </div>
                     </div>
                 </div>
             </nav>
-
-            {header && (
-                <header className="bg-white shadow">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
-                </header>
-            )}
 
             <main>{children}</main>
         </div>
