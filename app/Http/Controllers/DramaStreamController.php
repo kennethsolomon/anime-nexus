@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\Drama\GetDramaDetail;
-use App\Actions\Drama\GetDramaStreamingLinks;
 use App\Models\WatchHistory;
 use App\Services\ConsumetService;
 use Illuminate\Http\Request;
@@ -18,43 +17,14 @@ final class DramaStreamController extends Controller
     public function show(
         string $id,
         Request $request,
-        GetDramaStreamingLinks $streamingAction,
         GetDramaDetail $detailAction,
         ConsumetService $consumet,
     ): Response {
         $episodeId = $request->string('episodeId')->toString();
         $mediaId = $request->string('mediaId')->toString();
         $drama = $detailAction->handle($id);
-        $streaming = $streamingAction->handle($episodeId, $mediaId);
 
-        // Rewrite source and subtitle URLs to go through our proxy
-        $referer = $streaming['headers']['Referer'] ?? '';
-
-        if (! empty($streaming['sources'])) {
-            $streaming['sources'] = array_map(function (array $source) use ($referer): array {
-                $source['url'] = route('stream.proxy', [
-                    'url' => $source['url'],
-                    'referer' => $referer,
-                ]);
-
-                return $source;
-            }, $streaming['sources']);
-        }
-
-        if (! empty($streaming['subtitles'])) {
-            $streaming['subtitles'] = array_map(function (array $sub) use ($referer): array {
-                if (! empty($sub['url'])) {
-                    $sub['url'] = route('stream.proxy', [
-                        'url' => $sub['url'],
-                        'referer' => $referer,
-                    ]);
-                }
-
-                return $sub;
-            }, $streaming['subtitles']);
-        }
-
-        // Build embed URL as fallback when HLS extraction fails
+        // Build embed URL via TMDB — skip Consumet streaming (all providers return 500)
         $embedUrl = null;
         $isMovie = ($drama['type'] ?? '') === 'Movie' || str_starts_with($id, 'movie/');
         $tmdbType = $isMovie ? 'Movie' : 'TV Series';
@@ -81,7 +51,7 @@ final class DramaStreamController extends Controller
 
         return Inertia::render('DramaWatch', [
             'drama' => $drama,
-            'streaming' => $streaming,
+            'streaming' => ['sources' => [], 'subtitles' => []],
             'episodeId' => $episodeId,
             'mediaId' => $mediaId,
             'embedUrl' => $embedUrl,

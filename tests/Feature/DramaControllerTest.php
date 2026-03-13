@@ -18,10 +18,9 @@ beforeEach(function (): void {
                 ['id' => '1167571', 'title' => 'Episode 1', 'number' => 1, 'season' => 1],
             ],
         ], 200),
-        '*/movies/flixhq/watch*' => Http::response([
-            'sources' => [['url' => 'https://example.com/stream.m3u8', 'quality' => 'auto', 'isM3U8' => true]],
-            'subtitles' => [],
-        ], 200),
+        '*/meta/tmdb/*' => Http::response(['results' => [
+            ['id' => 117376, 'title' => 'Vincenzo', 'type' => 'TV Series'],
+        ]], 200),
         '*/movies/flixhq/*' => Http::response(['results' => [
             ['id' => 'tv/watch-vincenzo-67955', 'title' => 'Vincenzo', 'image' => 'https://example.com/vincenzo.jpg'],
         ]], 200),
