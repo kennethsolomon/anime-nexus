@@ -2,13 +2,13 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import EpisodeList from '@/Components/EpisodeList';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { AnimeInfo, WatchlistItem } from '@/types/anime';
+import { DramaEpisode, DramaInfo, WatchlistItem } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
 import { useRef, useState } from 'react';
 
-interface AnimeDetailProps {
-    anime: AnimeInfo;
+interface DramaDetailProps {
+    drama: DramaInfo;
     watchlistEntry?: WatchlistItem | null;
 }
 
@@ -17,7 +17,7 @@ function GuestNav() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.get(route('anime.search'), { q: searchQuery });
+            router.get(route('drama.search'), { q: searchQuery });
         }
     };
 
@@ -33,7 +33,7 @@ function GuestNav() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search anime..."
+                        placeholder="Search dramas..."
                         className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-10 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
                     />
                 </form>
@@ -47,14 +47,14 @@ function GuestNav() {
 }
 
 function WatchlistDropdown({
-    animeId,
-    animeTitle,
-    animeImage,
+    dramaId,
+    dramaTitle,
+    dramaImage,
     watchlistEntry,
 }: {
-    animeId: string;
-    animeTitle: string;
-    animeImage: string;
+    dramaId: string;
+    dramaTitle: string;
+    dramaImage: string;
     watchlistEntry?: WatchlistItem | null;
 }) {
     const [open, setOpen] = useState(false);
@@ -69,11 +69,11 @@ function WatchlistDropdown({
 
     const handleSelect = (status: string) => {
         router.post(route('watchlist.store'), {
-            anime_id: animeId,
-            anime_title: animeTitle,
-            anime_image: animeImage,
+            anime_id: dramaId,
+            anime_title: dramaTitle,
+            anime_image: dramaImage,
             status,
-            content_type: 'anime',
+            content_type: 'drama',
         });
         setOpen(false);
     };
@@ -117,9 +117,7 @@ function WatchlistDropdown({
                                 key={status.value}
                                 onClick={() => handleSelect(status.value)}
                                 className={`flex w-full items-center px-4 py-2 text-sm transition hover:bg-input ${
-                                    watchlistEntry?.status === status.value
-                                        ? 'text-accent'
-                                        : 'text-primary'
+                                    watchlistEntry?.status === status.value ? 'text-accent' : 'text-primary'
                                 }`}
                             >
                                 {watchlistEntry?.status === status.value && (
@@ -133,10 +131,7 @@ function WatchlistDropdown({
                         {watchlistEntry && (
                             <>
                                 <div className="border-t border-subtle" />
-                                <button
-                                    onClick={handleRemove}
-                                    className="flex w-full items-center px-4 py-2 text-sm text-danger hover:bg-input"
-                                >
+                                <button onClick={handleRemove} className="flex w-full items-center px-4 py-2 text-sm text-danger hover:bg-input">
                                     Remove
                                 </button>
                             </>
@@ -148,25 +143,19 @@ function WatchlistDropdown({
     );
 }
 
-function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
-    const { auth } = usePage().props as {
-        auth?: { user?: { id: number } };
-    };
+function DramaDetailContent({ drama, watchlistEntry }: DramaDetailProps) {
+    const { auth } = usePage().props as { auth?: { user?: { id: number } } };
+    const episodes = (drama.episodes || []) as DramaEpisode[];
+    const seasons = [...new Set(episodes.map((ep) => ep.season))].sort((a, b) => a - b);
+    const [selectedSeason, setSelectedSeason] = useState(seasons[0] || 1);
 
-    if (anime.error) {
+    if (drama.error) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <div className="rounded-xl border border-danger/30 bg-danger/10 p-8 text-center">
-                    <h2 className="text-xl font-bold text-danger">
-                        Failed to load anime
-                    </h2>
-                    <p className="mt-2 text-theme-secondary">
-                        {anime.message || 'Source unavailable'}
-                    </p>
-                    <button
-                        onClick={() => router.reload()}
-                        className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover"
-                    >
+                    <h2 className="text-xl font-bold text-danger">Failed to load drama</h2>
+                    <p className="mt-2 text-theme-secondary">{drama.message || 'Source unavailable'}</p>
+                    <button onClick={() => router.reload()} className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover">
                         Retry
                     </button>
                 </div>
@@ -174,82 +163,84 @@ function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
         );
     }
 
-    const firstEpisode = anime.episodes?.[0];
+    const filteredEpisodes = seasons.length > 1
+        ? episodes.filter((ep) => ep.season === selectedSeason)
+        : episodes;
+
+    const firstEpisode = filteredEpisodes[0];
 
     return (
         <>
-            <Head title={anime.title} />
+            <Head title={drama.title} />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                {/* Hero section */}
                 <div className="flex flex-col gap-6 md:flex-row">
-                    {/* Cover image */}
                     <div className="w-full shrink-0 md:w-64">
-                        <img
-                            src={anime.image}
-                            alt={anime.title}
-                            className="w-full rounded-xl shadow-lg"
-                        />
+                        <img src={drama.image} alt={drama.title} className="w-full rounded-xl shadow-lg" />
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1">
-                        <h1 className="font-display text-3xl font-bold text-primary">
-                            {anime.title}
-                        </h1>
+                        <h1 className="font-display text-3xl font-bold text-primary">{drama.title}</h1>
 
                         <div className="mt-3 flex flex-wrap gap-2">
-                            {anime.rating !== undefined && anime.rating > 0 && (
+                            {drama.rating !== undefined && drama.rating > 0 && (
                                 <span className="rounded-md bg-secondary px-2 py-1 font-mono text-sm font-bold text-base">
-                                    {anime.rating.toFixed(1)}
+                                    {drama.rating.toFixed(1)}
                                 </span>
                             )}
-                            {anime.type && (
-                                <span className="rounded-md bg-accent px-2 py-1 text-sm font-medium text-base">
-                                    {anime.type}
-                                </span>
+                            {drama.type && (
+                                <span className="rounded-md bg-accent px-2 py-1 text-sm font-medium text-base">{drama.type}</span>
                             )}
-                            {anime.status && (
-                                <span className="rounded-md border border-muted bg-input px-2 py-1 text-sm text-theme-secondary">
-                                    {anime.status}
-                                </span>
+                            {drama.status && (
+                                <span className="rounded-md border border-muted bg-input px-2 py-1 text-sm text-theme-secondary">{drama.status}</span>
                             )}
-                            {anime.releaseDate && (
-                                <span className="rounded-md border border-muted bg-input px-2 py-1 text-sm text-theme-secondary">
-                                    {anime.releaseDate}
-                                </span>
+                            {drama.country && (
+                                <span className="rounded-md border border-muted bg-input px-2 py-1 text-sm text-theme-secondary">{drama.country}</span>
                             )}
-                            {anime.totalEpisodes !== undefined && anime.totalEpisodes > 0 && (
+                            {drama.releaseDate && (
+                                <span className="rounded-md border border-muted bg-input px-2 py-1 text-sm text-theme-secondary">{drama.releaseDate}</span>
+                            )}
+                            {drama.duration && (
+                                <span className="rounded-md border border-muted bg-input px-2 py-1 font-mono text-sm text-theme-secondary">{drama.duration}</span>
+                            )}
+                            {drama.totalEpisodes !== undefined && drama.totalEpisodes > 0 && (
                                 <span className="rounded-md border border-muted bg-input px-2 py-1 font-mono text-sm text-theme-secondary">
-                                    {anime.totalEpisodes} eps
+                                    {drama.totalEpisodes} eps
                                 </span>
                             )}
                         </div>
 
+                        {/* Casts */}
+                        {drama.casts && drama.casts.length > 0 && (
+                            <div className="mt-3">
+                                <span className="text-sm font-medium text-theme-secondary">Cast: </span>
+                                <span className="text-sm text-primary">{drama.casts.join(', ')}</span>
+                            </div>
+                        )}
+
+                        {drama.production && (
+                            <div className="mt-1">
+                                <span className="text-sm font-medium text-theme-secondary">Production: </span>
+                                <span className="text-sm text-primary">{drama.production}</span>
+                            </div>
+                        )}
+
                         {/* Genres */}
-                        {anime.genres && anime.genres.length > 0 && (
+                        {drama.genres && drama.genres.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-1.5">
-                                {anime.genres.map((genre) => (
-                                    <a
-                                        key={genre}
-                                        href={route('anime.genre', {
-                                            genre: genre.toLowerCase(),
-                                        })}
-                                        className="rounded-full border border-muted px-3 py-1 text-xs text-theme-secondary transition hover:border-accent hover:text-accent"
-                                    >
+                                {drama.genres.map((genre) => (
+                                    <span key={genre} className="rounded-full border border-muted px-3 py-1 text-xs text-theme-secondary">
                                         {genre}
-                                    </a>
+                                    </span>
                                 ))}
                             </div>
                         )}
 
                         {/* Description */}
-                        {anime.description && (
+                        {drama.description && (
                             <div
                                 className="mt-4 leading-relaxed text-theme-secondary"
-                                dangerouslySetInnerHTML={{
-                                    __html: DOMPurify.sanitize(anime.description),
-                                }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(drama.description) }}
                             />
                         )}
 
@@ -257,10 +248,7 @@ function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
                         <div className="mt-6 flex flex-wrap items-center gap-3">
                             {firstEpisode && (
                                 <Link
-                                    href={route('anime.watch', {
-                                        id: anime.id,
-                                        episodeId: firstEpisode.id,
-                                    })}
+                                    href={route('drama.watch', { id: drama.id, episodeId: firstEpisode.id, mediaId: drama.id })}
                                     className="inline-flex items-center gap-2 rounded-lg bg-secondary px-5 py-2.5 font-medium text-base transition hover:bg-secondary-hover"
                                 >
                                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -271,9 +259,9 @@ function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
                             )}
                             {auth?.user && (
                                 <WatchlistDropdown
-                                    animeId={anime.id}
-                                    animeTitle={anime.title}
-                                    animeImage={anime.image}
+                                    dramaId={drama.id}
+                                    dramaTitle={drama.title}
+                                    dramaImage={drama.image}
                                     watchlistEntry={watchlistEntry}
                                 />
                             )}
@@ -281,12 +269,29 @@ function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
                     </div>
                 </div>
 
-                {/* Episodes */}
-                {anime.episodes && anime.episodes.length > 0 && (
+                {/* Season selector + Episodes */}
+                {episodes.length > 0 && (
                     <div className="mt-8">
+                        {seasons.length > 1 && (
+                            <div className="mb-4 flex items-center gap-2">
+                                <span className="text-sm font-medium text-theme-secondary">Season:</span>
+                                <select
+                                    value={selectedSeason}
+                                    onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                                    className="rounded-lg border-subtle bg-input px-3 py-1.5 text-sm text-primary focus:border-accent focus:ring-1 focus:ring-accent"
+                                >
+                                    {seasons.map((s) => (
+                                        <option key={s} value={s}>Season {s}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <EpisodeList
-                            animeId={anime.id}
-                            episodes={anime.episodes}
+                            animeId={drama.id}
+                            episodes={filteredEpisodes}
+                            buildEpisodeUrl={(episodeId) =>
+                                route('drama.watch', { id: drama.id, episodeId, mediaId: drama.id })
+                            }
                         />
                     </div>
                 )}
@@ -295,13 +300,13 @@ function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
     );
 }
 
-export default function AnimeDetail(props: AnimeDetailProps) {
+export default function DramaDetail(props: DramaDetailProps) {
     const { auth } = usePage().props as { auth?: { user?: unknown } };
 
     if (auth?.user) {
         return (
             <AuthenticatedLayout>
-                <AnimeDetailContent {...props} />
+                <DramaDetailContent {...props} />
             </AuthenticatedLayout>
         );
     }
@@ -309,7 +314,7 @@ export default function AnimeDetail(props: AnimeDetailProps) {
     return (
         <div className="min-h-screen bg-base">
             <GuestNav />
-            <AnimeDetailContent {...props} />
+            <DramaDetailContent {...props} />
         </div>
     );
 }

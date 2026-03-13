@@ -10,7 +10,7 @@ use App\Models\Watchlist;
 final class AddToWatchlist
 {
     /**
-     * @param  array{anime_id: string, anime_title: string, anime_image: string|null, status?: string}  $data
+     * @param  array{anime_id: string, anime_title: string, anime_image: string|null, status?: string, content_type?: string}  $data
      */
     public function handle(User $user, array $data): Watchlist
     {
@@ -20,6 +20,7 @@ final class AddToWatchlist
                 'anime_title' => $data['anime_title'],
                 'anime_image' => $data['anime_image'] ?? null,
                 'status' => $data['status'] ?? 'plan_to_watch',
+                'content_type' => $data['content_type'] ?? 'anime',
             ],
         );
     }

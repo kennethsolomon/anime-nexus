@@ -2,15 +2,14 @@ import AnimeCard from '@/Components/AnimeCard';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { AnimeSearchResponse } from '@/types/anime';
+import { DramaSearchResponse } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
-interface SearchProps {
-    results: AnimeSearchResponse | [];
+interface DramaSearchProps {
+    results: DramaSearchResponse | [];
     query: string;
     page: number;
-    isGenre?: boolean;
 }
 
 function GuestNav() {
@@ -18,7 +17,7 @@ function GuestNav() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.get(route('anime.search'), { q: searchQuery });
+            router.get(route('drama.search'), { q: searchQuery });
         }
     };
 
@@ -34,7 +33,7 @@ function GuestNav() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search anime..."
+                        placeholder="Search dramas..."
                         className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-10 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
                     />
                 </form>
@@ -47,13 +46,13 @@ function GuestNav() {
     );
 }
 
-function SearchContent({ results, query, page, isGenre }: SearchProps) {
+function DramaSearchContent({ results, query, page }: DramaSearchProps) {
     const [searchQuery, setSearchQuery] = useState(query);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.get(route('anime.search'), { q: searchQuery });
+            router.get(route('drama.search'), { q: searchQuery });
         }
     };
 
@@ -63,56 +62,43 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
 
     return (
         <>
-            <Head title={isGenre ? `Genre: ${query}` : `Search: ${query}`} />
+            <Head title={`Drama Search: ${query}`} />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                {!isGenre && (
-                    <form onSubmit={handleSearch} className="mb-8 sm:hidden">
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search anime..."
-                            className="w-full rounded-full border-subtle bg-input px-4 py-3 text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
-                        />
-                    </form>
-                )}
+                <form onSubmit={handleSearch} className="mb-8 sm:hidden">
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search dramas..."
+                        className="w-full rounded-full border-subtle bg-input px-4 py-3 text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
+                    />
+                </form>
 
                 <h1 className="mb-6 font-display text-2xl font-bold text-primary">
-                    {isGenre ? `Genre: ${query}` : `Results for "${query}"`}
+                    Results for "{query}"
                 </h1>
 
                 {items.length > 0 ? (
                     <>
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                            {items.map((anime) => (
+                            {items.map((drama) => (
                                 <AnimeCard
-                                    key={anime.id}
-                                    id={anime.id}
-                                    title={anime.title}
-                                    image={anime.image}
-                                    rating={anime.rating}
-                                    type={anime.type}
-                                    episodeCount={anime.totalEpisodes}
+                                    key={drama.id}
+                                    id={drama.id}
+                                    title={drama.title}
+                                    image={drama.image}
+                                    rating={drama.rating}
+                                    type={drama.type}
+                                    detailRoute={route('drama.show', { id: drama.id })}
                                 />
                             ))}
                         </div>
 
-                        {/* Pagination */}
                         <div className="mt-8 flex justify-center gap-4">
                             {page > 1 && (
                                 <button
-                                    onClick={() =>
-                                        router.get(
-                                            isGenre
-                                                ? route('anime.genre', { genre: query })
-                                                : route('anime.search'),
-                                            {
-                                                ...(isGenre ? {} : { q: query }),
-                                                page: page - 1,
-                                            },
-                                        )
-                                    }
+                                    onClick={() => router.get(route('drama.search'), { q: query, page: page - 1 })}
                                     className="rounded-lg border border-muted bg-input px-4 py-2 text-sm text-primary transition hover:border-accent"
                                 >
                                     Previous
@@ -120,17 +106,7 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
                             )}
                             {hasNext && (
                                 <button
-                                    onClick={() =>
-                                        router.get(
-                                            isGenre
-                                                ? route('anime.genre', { genre: query })
-                                                : route('anime.search'),
-                                            {
-                                                ...(isGenre ? {} : { q: query }),
-                                                page: page + 1,
-                                            },
-                                        )
-                                    }
+                                    onClick={() => router.get(route('drama.search'), { q: query, page: page + 1 })}
                                     className="rounded-lg border border-muted bg-input px-4 py-2 text-sm text-primary transition hover:border-accent"
                                 >
                                     Next
@@ -140,9 +116,7 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
                     </>
                 ) : (
                     query && (
-                        <p className="text-theme-secondary">
-                            No results found for "{query}"
-                        </p>
+                        <p className="text-theme-secondary">No results found for "{query}"</p>
                     )
                 )}
             </div>
@@ -150,13 +124,13 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
     );
 }
 
-export default function Search(props: SearchProps) {
+export default function DramaSearch(props: DramaSearchProps) {
     const { auth } = usePage().props as { auth?: { user?: unknown } };
 
     if (auth?.user) {
         return (
             <AuthenticatedLayout>
-                <SearchContent {...props} />
+                <DramaSearchContent {...props} />
             </AuthenticatedLayout>
         );
     }
@@ -164,7 +138,7 @@ export default function Search(props: SearchProps) {
     return (
         <div className="min-h-screen bg-base">
             <GuestNav />
-            <SearchContent {...props} />
+            <DramaSearchContent {...props} />
         </div>
     );
 }

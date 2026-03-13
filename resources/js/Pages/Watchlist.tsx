@@ -1,10 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { WatchlistItem } from '@/types/anime';
+import { ContentType, WatchlistItem } from '@/types/anime';
 import { Head, Link, router } from '@inertiajs/react';
 
 interface WatchlistProps {
     watchlist: WatchlistItem[];
     currentStatus: string;
+    currentContentType?: ContentType;
 }
 
 const STATUSES = [
@@ -22,7 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
     dropped: 'bg-danger',
 };
 
-export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) {
+export default function Watchlist({ watchlist, currentStatus, currentContentType = 'anime' }: WatchlistProps) {
     const handleStatusChange = (itemId: number, newStatus: string) => {
         router.patch(route('watchlist.update', { watchlist: itemId }), {
             status: newStatus,
@@ -42,6 +43,23 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                     My Watchlist
                 </h1>
 
+                {/* Content type tabs */}
+                <div className="mb-4 flex gap-2">
+                    {(['anime', 'drama'] as const).map((type) => (
+                        <button
+                            key={type}
+                            onClick={() => router.get(route('watchlist.index'), { content_type: type, status: 'all' })}
+                            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                                currentContentType === type
+                                    ? 'bg-accent text-base'
+                                    : 'border border-muted bg-input text-theme-secondary hover:border-accent hover:text-primary'
+                            }`}
+                        >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Status tabs */}
                 <div className="mb-6 flex flex-wrap gap-2">
                     {STATUSES.map((status) => (
@@ -49,6 +67,7 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                             key={status.value}
                             onClick={() =>
                                 router.get(route('watchlist.index'), {
+                                    content_type: currentContentType,
                                     status: status.value,
                                 })
                             }
@@ -72,9 +91,10 @@ export default function Watchlist({ watchlist, currentStatus }: WatchlistProps) 
                                 className="flex gap-3 rounded-xl border border-subtle bg-surface p-4 transition hover:border-muted"
                             >
                                 <Link
-                                    href={route('anime.show', {
-                                        id: item.anime_id,
-                                    })}
+                                    href={route(
+                                        currentContentType === 'drama' ? 'drama.show' : 'anime.show',
+                                        { id: item.anime_id },
+                                    )}
                                     className="shrink-0"
                                 >
                                     {item.anime_image ? (

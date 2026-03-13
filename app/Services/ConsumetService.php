@@ -13,6 +13,8 @@ final readonly class ConsumetService
 {
     private const array PROVIDERS = ['animekai', 'hianime', 'gogoanime'];
 
+    private const array DRAMA_PROVIDERS = ['flixhq', 'goku'];
+
     private const int CACHE_METADATA = 86400;    // 24 hours
 
     private const int CACHE_EPISODES = 21600;    // 6 hours
@@ -111,6 +113,61 @@ final readonly class ConsumetService
     }
 
     /**
+     * Search dramas by query string.
+     *
+     * @return array<string, mixed>
+     */
+    public function searchDrama(string $query, int $page = 1): array
+    {
+        $cacheKey = "consumet:drama:search:{$query}:{$page}";
+
+        return $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->requestWithDramaFallback(
+            fn (string $provider): array => $this->get("/movies/{$provider}/{$query}", ['page' => $page]),
+        ));
+    }
+
+    /**
+     * Get drama detail/info by ID.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDramaInfo(string $dramaId, string $provider = 'flixhq'): array
+    {
+        $cacheKey = "consumet:drama:info:{$provider}:{$dramaId}";
+
+        return $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->get("/movies/{$provider}/info", ['id' => $dramaId]));
+    }
+
+    /**
+     * Get drama streaming links for an episode.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDramaStreamingLinks(string $episodeId, string $mediaId, string $provider = 'flixhq'): array
+    {
+        $cacheKey = "consumet:drama:stream:{$provider}:{$episodeId}";
+
+        return $this->cached($cacheKey, self::CACHE_STREAMING, fn (): array => $this->get("/movies/{$provider}/watch", [
+            'episodeId' => $episodeId,
+            'mediaId' => $mediaId,
+        ]));
+    }
+
+    /**
+     * Get trending dramas.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDramaTrending(int $page = 1): array
+    {
+        $cacheKey = "consumet:drama:trending:{$page}";
+
+        return $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->requestWithDramaFallback(
+            fn (string $provider): array => $this->get("/movies/{$provider}/trending", ['page' => $page]),
+        ));
+    }
+
+    /**
      * Get fresh streaming links bypassing cache (for retry).
      *
      * @return array<string, mixed>
@@ -169,6 +226,31 @@ final readonly class ConsumetService
         }
 
         return ['error' => true, 'message' => 'All anime sources are currently unavailable'];
+    }
+
+    /**
+     * Try request across drama providers, return first success.
+     *
+     * @param  callable(string): array<string, mixed>  $callback
+     * @return array<string, mixed>
+     */
+    private function requestWithDramaFallback(callable $callback): array
+    {
+        foreach (self::DRAMA_PROVIDERS as $provider) {
+            try {
+                $result = $callback($provider);
+
+                if (! isset($result['error'])) {
+                    return $result;
+                }
+            } catch (ConnectionException $e) {
+                Log::warning("Consumet drama provider {$provider} failed: {$e->getMessage()}");
+
+                continue;
+            }
+        }
+
+        return ['error' => true, 'message' => 'All drama sources are currently unavailable'];
     }
 
     /**

@@ -1,9 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { WatchHistoryItem } from '@/types/anime';
-import { Head, Link } from '@inertiajs/react';
+import { ContentType, WatchHistoryItem } from '@/types/anime';
+import { Head, Link, router } from '@inertiajs/react';
 
 interface HistoryProps {
     history: WatchHistoryItem[];
+    currentContentType?: ContentType;
 }
 
 function formatTime(seconds: number): string {
@@ -33,7 +34,7 @@ function timeAgo(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString();
 }
 
-export default function History({ history }: HistoryProps) {
+export default function History({ history, currentContentType = 'anime' }: HistoryProps) {
     return (
         <AuthenticatedLayout>
             <Head title="Watch History" />
@@ -50,6 +51,23 @@ export default function History({ history }: HistoryProps) {
                     )}
                 </div>
 
+                {/* Content type tabs */}
+                <div className="mb-6 flex gap-2">
+                    {(['anime', 'drama'] as const).map((type) => (
+                        <button
+                            key={type}
+                            onClick={() => router.get(route('history.index'), { content_type: type })}
+                            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                                currentContentType === type
+                                    ? 'bg-accent text-base'
+                                    : 'border border-muted bg-input text-theme-secondary hover:border-accent hover:text-primary'
+                            }`}
+                        >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </button>
+                    ))}
+                </div>
+
                 {history.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {history.map((item) => {
@@ -62,10 +80,10 @@ export default function History({ history }: HistoryProps) {
                             return (
                                 <Link
                                     key={item.id}
-                                    href={route('anime.watch', {
-                                        id: item.anime_id,
-                                        episodeId: item.episode_id,
-                                    })}
+                                    href={route(
+                                        currentContentType === 'drama' ? 'drama.watch' : 'anime.watch',
+                                        { id: item.anime_id, episodeId: item.episode_id },
+                                    )}
                                     className="group relative overflow-hidden rounded-xl border border-subtle bg-surface transition hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5"
                                 >
                                     {/* Thumbnail */}

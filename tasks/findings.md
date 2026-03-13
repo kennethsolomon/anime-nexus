@@ -53,23 +53,69 @@ Restyle the entire app (formerly "Watch Anime", now "Anime Nexus") from default 
 6. ArtPlayer theme color: `#5DADE2`
 7. Brand: "Anime" in cyan + "Nexus" in amber, Lexend 700
 
-## UX Fixes Required
+---
 
-1. **Home:** Continue Watching needs anime title + poster (needs backend: add anime_title/anime_image to watch_histories)
-2. **Anime Detail:** Add prominent "Watch EP 1" / "Resume EP X" CTA; collapse watchlist into dropdown
-3. **Watch:** Previous/Next show destination ep number; add link back to detail page
-4. **Watchlist:** Full dark theme; larger posters; styled select; empty state CTA
-5. **History:** Show anime title + poster (needs backend migration); progress bars; dark theme
-6. **Auth pages:** Full dark treatment, brand instead of Laravel logo
-7. **Profile:** Dark cards, dark inputs, dark modal
+## Feature: Drama Content Support (Content Type Switcher)
 
-## Backend Changes Required
+### Problem Statement
 
-- Migration: add `anime_title` (string) and `anime_image` (string, nullable) to `watch_histories`
-- Update WatchHistory model fillable + SaveProgressRequest rules
-- Update HistoryController/SaveWatchProgress to accept new fields
-- Update Watch.tsx to send anime_title/anime_image with progress saves
+App is primarily for anime but user also wants to watch K-dramas, C-dramas, and J-dramas. Need a mode switcher that changes the entire browsing context between Anime and Drama.
 
-## Open Questions
+### Approach: Content Type Switcher (Approach A)
 
-- None
+A global toggle in the nav bar that switches between "Anime" and "Drama" modes. Each mode has its own home feed, search, and providers. Shared watchlist and history.
+
+### API Discovery (Consumet @ localhost:3000)
+
+**Working providers for dramas:**
+
+| Feature | FlixHQ (`/movies/flixhq/`) | Goku (`/movies/goku/`) |
+|---------|---------------------------|----------------------|
+| Search | Yes | Yes |
+| Info (detail + episodes) | Yes | Yes |
+| Trending | Yes | Yes |
+| Servers list | Yes | Yes |
+| **Streaming (watch)** | **Broken** | **Broken** |
+
+- DramaCool returns empty results — not usable
+- ViewAsian, MyFlixer, FMovies — not available on this instance
+- **Streaming is broken** on all drama providers. Building UI anyway so it's ready when Consumet is updated.
+
+### API Endpoint Differences
+
+| | Anime (`/anime/`) | Drama (`/movies/`) |
+|--|-------------------|-------------------|
+| Search | `/anime/{provider}/{query}` | `/movies/{provider}/{query}` |
+| Info | `/anime/{provider}/info?id={id}` | `/movies/{provider}/info?id={id}` |
+| Trending | `/anime/{provider}/trending` | `/movies/{provider}/trending` |
+| Watch | `/anime/{provider}/watch/{episodeId}` | `/movies/{provider}/watch?episodeId={X}&mediaId={Y}` |
+| Episode ID format | `slug$ep=1$token=xxx` | Numeric (`1167571`) |
+| Has `season` field | No | Yes (1, 2, ...) |
+| Has `country` field | No | Yes ("South Korea") |
+| Has `casts` field | No | Yes (array) |
+| Has `intro`/`outro` | Yes | No |
+| Watch requires `mediaId` | No | **Yes** |
+
+### Key Decisions
+
+1. **Content type state**: stored in URL path prefix and localStorage for persistence
+2. **Nav switcher**: pill toggle or dropdown in the nav bar — Anime | Drama
+3. **Shared components**: AnimeCard, EpisodeList, VideoPlayer are reusable for dramas (just different data shapes)
+4. **New type definitions**: `DramaResult`, `DramaInfo` extending or paralleling anime types, with `season` and `casts` fields
+5. **Backend**: New `DramaService` or extend `ConsumetService` with `/movies/` methods. Use FlixHQ as primary, Goku as fallback.
+6. **Routes**: `/drama` (home), `/drama/search`, `/drama/{id}` (detail), `/drama/{id}/watch` (watch)
+7. **Database**: Add `content_type` enum column (`anime`, `drama`) to `watchlists` and `watch_histories` tables (default: `anime`)
+8. **Drama providers**: `['flixhq', 'goku']` with fallback pattern same as anime
+9. **Seasons**: Drama detail page needs a season selector (anime doesn't have seasons)
+10. **Watch endpoint**: Drama streaming needs both `episodeId` AND `mediaId` passed through
+
+### Open Questions
+
+- Streaming broken on all drama providers — will work once Consumet is updated
+- May need to filter FlixHQ trending to show only TV Series (it returns movies too)
+
+### Scope
+
+- Nice-to-have feature, not blocking anime functionality
+- Build full browse/discovery + watch UI, wire up API calls correctly
+- Will just work once Consumet streaming is fixed

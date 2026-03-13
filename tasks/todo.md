@@ -1,163 +1,147 @@
-# Anime Nexus — UI Redesign Plan
+# Drama Content Support — Implementation Plan
 
 ## Goal
 
-Restyle the entire app from Breeze defaults to a dark "Celestial Fire" theme derived from the Anime Nexus logo. Fix UX issues across all pages. Rename app to "Anime Nexus".
+Add a content type switcher (Anime | Drama) to the nav bar. Each mode has its own home feed, search, detail, and watch pages. Shared watchlist and history with a `content_type` discriminator. Drama sources: FlixHQ (primary), Goku (fallback) via Consumet `/movies/` API.
 
 ## Constraints
 
-- No new npm dependencies except DOMPurify (for HTML description rendering)
-- All existing Pest tests must still pass after changes
 - Follow existing conventions: strict types, final classes, Actions pattern
-- Tailwind custom colors via config (no raw hex scattered in components)
+- All existing anime tests must still pass
+- Reuse existing components (AnimeCard, EpisodeList, VideoPlayer) where possible
+- Streaming is broken on drama providers — build UI anyway, will work when Consumet is updated
 
-## Plan
+---
 
-### Phase 1: Foundation (config, fonts, colors, branding)
+## Phase 1: Backend — ConsumetService Drama Methods
 
-- [ ] **1.1** Copy logo to `public/images/anime-nexus-logo.png`
-- [ ] **1.2** Update `.env` `APP_NAME` to "Anime Nexus"
-- [ ] **1.3** Update `app.blade.php`: replace Figtree font with Lexend + DM Sans + JetBrains Mono from Google Fonts
-- [ ] **1.4** Update `tailwind.config.js`: add custom color palette (base, surface, input, accent, secondary, etc.) and font families (lexend, dm-sans, jetbrains-mono)
-- [ ] **1.5** Update `resources/css/app.css` if needed: set base body colors
-- [ ] **1.6** Verify: `npm run build` succeeds, fonts load in browser
+- [x] 1.1 Add drama provider constants and methods to `ConsumetService.php`: `searchDrama()`, `getDramaInfo()`, `getDramaStreamingLinks()`, `getDramaTrending()`
+  - Drama providers: `['flixhq', 'goku']`
+  - Endpoints under `/movies/{provider}/...`
+  - `getDramaStreamingLinks()` passes `episodeId` + `mediaId` as query params
+  - **Verify:** `php artisan tinker` — `app(ConsumetService::class)->searchDrama('vincenzo')` returns results
 
-### Phase 2: Breeze Shared Components (dark theme)
+- [x] 1.2 Create Action classes in `app/Actions/Drama/`:
+  - `GetDramaTrending.php` — calls `getDramaTrending()`, filters to TV Series only
+  - `SearchDrama.php` — calls `searchDrama()`
+  - `GetDramaDetail.php` — calls `getDramaInfo()`
+  - `GetDramaStreamingLinks.php` — calls `getDramaStreamingLinks()`
+  - **Verify:** `npx tsc --noEmit` still clean (PHP only)
 
-- [ ] **2.1** Update `TextInput.tsx`: dark bg, dark border, cyan focus ring
-- [ ] **2.2** Update `InputLabel.tsx`: light text for dark bg
-- [ ] **2.3** Update `PrimaryButton.tsx`: amber bg, dark text
-- [ ] **2.4** Update `SecondaryButton.tsx`: dark surface bg, muted border
-- [ ] **2.5** Update `DangerButton.tsx`: fix focus ring from indigo to red
-- [ ] **2.6** Update `Checkbox.tsx`: cyan accent instead of indigo
-- [ ] **2.7** Update `Modal.tsx`: dark panel bg, darker overlay
-- [ ] **2.8** Update `Dropdown.tsx`: dark content bg, dark hover, dark link text
-- [ ] **2.9** Update `NavLink.tsx` and `ResponsiveNavLink.tsx`: dark theme colors
-- [ ] **2.10** Verify: `npx tsc --noEmit` passes
+## Phase 2: Database — Content Type Column
 
-### Phase 3: Layouts (full redesign)
+- [x] 2.1 Migration: add `content_type` string column to `watchlists` table (default: `'anime'`)
+- [x] 2.2 Migration: add `content_type` string column to `watch_histories` table (default: `'anime'`)
+  - **Verify:** `php artisan migrate` succeeds
 
-- [ ] **3.1** Create `ApplicationLogo.tsx` replacement: render the Anime Nexus logo image (`/images/anime-nexus-logo.png`) + "Anime" (cyan) + "Nexus" (amber) text side by side
-- [ ] **3.2** Redesign `AuthenticatedLayout.tsx`: dark nav bar (bg surface), logo image + brand text, centered search input, icon nav links (Watchlist bookmark, History clock), user dropdown with initials avatar, remove `header` prop, dark mobile menu
-- [ ] **3.3** Redesign `GuestLayout.tsx`: dark full-page bg (`#0D1117`), Anime Nexus logo image displayed prominently above the form card, dark card (surface bg, subtle border, rounded-xl)
-- [ ] **3.4** Verify: log in/out, check both layouts render correctly
+- [x] 2.3 Update `Watchlist` model: add `content_type` to `$fillable`
+- [x] 2.4 Update `WatchHistory` model: add `content_type` to `$fillable`
+- [x] 2.5 Update `SaveProgressRequest`: add optional `content_type` rule (`sometimes|string|in:anime,drama`)
+- [x] 2.6 Update `SaveWatchProgress` action: pass `content_type` through
+- [x] 2.7 Update `WatchlistController@store`: accept and save `content_type`
+  - **Verify:** `./vendor/bin/pest` — all existing tests pass
 
-### Phase 4: Backend (watch history enrichment)
+## Phase 3: Routes + Controllers
 
-- [ ] **4.1** Create migration: add `anime_title` (string, nullable) and `anime_image` (string, nullable) to `watch_histories` table
-- [ ] **4.2** Update `WatchHistory` model: add to `$fillable`
-- [ ] **4.3** Update `SaveProgressRequest`: add `anime_title` (sometimes, string) and `anime_image` (sometimes, string, url) rules
-- [ ] **4.4** Update `SaveWatchProgress` action: accept and save new fields
-- [ ] **4.5** Update `Watch.tsx`: send `anime_title` and `anime_image` in progress POST and onEnded POST
-- [ ] **4.6** Run migration, verify: `php artisan migrate:status`
-- [ ] **4.7** Run tests: `./vendor/bin/pest` — all pass
+- [x] 3.1 Create `DramaController.php` with: `index`, `search`, `show`
+  - Mirror `AnimeController` structure, call drama action classes
+  - `index`: trending dramas
+  - `search`: search by query
+  - `show`: drama detail with episodes
 
-### Phase 5: Home Page
+- [x] 3.2 Create `DramaStreamController.php` with: `show`
+  - Same pattern as `StreamController`, reuse proxy route
+  - Pass `mediaId` alongside `episodeId` to Consumet
 
-- [ ] **5.1** Restyle `Home.tsx`: remove inline search bar (moved to nav), dark bg, use Tailwind custom colors, section headers with "See All" links
-- [ ] **5.2** Update Continue Watching section: show anime title (not slug), poster thumbnail, visual progress bar
-- [ ] **5.3** Add guest nav bar inline (matching auth nav style: same dark bar with logo + search + login/register)
-- [ ] **5.4** Verify: page renders for guest and auth users
+- [x] 3.3 Add drama routes to `web.php`:
+  - `/drama` → `DramaController@index` (drama.home)
+  - `/drama/search` → `DramaController@search` (drama.search)
+  - `/drama/{id}` → `DramaController@show` (drama.show)
+  - `/drama/{id}/watch` → `DramaStreamController@show` (drama.watch)
+  - **Verify:** `php artisan route:list --name=drama` shows 4 routes
 
-### Phase 6: Anime Card & Episode List
+- [x] 3.4 Update `WatchlistController@index`: filter by optional `content_type` query param
+- [x] 3.5 Update `HistoryController@index`: filter by optional `content_type` query param
 
-- [ ] **6.1** Restyle `AnimeCard.tsx`: dark surface bg, cyan type badge, amber rating badge, hover lift + shadow, font updates
-- [ ] **6.2** Restyle `EpisodeList.tsx`: dark surface bg, cyan active indicator, dark borders, mono episode numbers
-- [ ] **6.3** Verify: cards and list render on Home and AnimeDetail pages
+## Phase 4: TypeScript Types
 
-### Phase 7: Anime Detail Page
+- [x] 4.1 Add to `resources/js/types/anime.d.ts`:
+  - `DramaResult` — like `AnimeResult` + `seasons?: number`, `country?: string`
+  - `DramaInfo` — like `AnimeInfo` + `casts?: string[]`, `country?: string`, `production?: string`
+  - `DramaEpisode` — like `Episode` + `season: number`
+  - `ContentType = 'anime' | 'drama'`
+  - Add `content_type?: ContentType` to `WatchHistoryItem` and `WatchlistItem`
+  - **Verify:** `npx tsc --noEmit` — clean
 
-- [ ] **7.1** Restyle `AnimeDetail.tsx`: dark bg, blurred cover hero, dark badges, cyan genre pills
-- [ ] **7.2** Add prominent "Watch EP 1" / "Resume EP X" primary CTA (amber button)
-- [ ] **7.3** Replace multi-button watchlist with single dropdown button (shows current status, dropdown reveals options + remove)
-- [ ] **7.4** Render HTML descriptions properly (install DOMPurify: `npm install dompurify @types/dompurify`, use `dangerouslySetInnerHTML` with sanitization)
-- [ ] **7.5** Add guest nav bar (same as Home)
-- [ ] **7.6** Verify: page renders for guest and auth, watchlist dropdown works
+## Phase 5: Nav Switcher
 
-### Phase 8: Watch Page
+- [x] 5.1 Create `ContentTypeSwitcher.tsx` — pill toggle: Anime | Drama
+  - Active: `bg-accent text-base rounded-lg`, inactive: `text-theme-secondary`
+  - Reads mode from current URL (path starts with `/drama` = drama mode)
+  - Click navigates to `/` (anime) or `/drama` (drama)
 
-- [ ] **8.1** Restyle `Watch.tsx`: dark bg, use custom colors
-- [ ] **8.2** Update VideoPlayer theme to `#5DADE2` (cyan)
-- [ ] **8.3** Update Previous/Next buttons: show destination episode number, amber for Next, ghost for Previous
-- [ ] **8.4** Add anime title link below player (links back to detail page)
-- [ ] **8.5** Add guest nav bar (same as Home)
-- [ ] **8.6** Verify: video plays, episode navigation works
+- [x] 5.2 Add switcher to `AuthenticatedLayout.tsx` (between logo and search)
+- [x] 5.3 Add switcher to all `GuestNav` instances (Home.tsx, Watch.tsx, AnimeDetail.tsx, Search.tsx)
+  - **Verify:** `npm run build` — success
 
-### Phase 9: Search Page
+## Phase 6: Drama Pages
 
-- [ ] **9.1** Restyle `Search.tsx`: dark bg, dark search input (if not using nav search), dark pagination buttons
-- [ ] **9.2** Add guest nav bar
-- [ ] **9.3** Verify: search and genre pages render correctly
+- [x] 6.1 Create `DramaHome.tsx` — trending dramas grid, continue watching (drama), GuestNav with switcher
+- [x] 6.2 Create `DramaDetail.tsx` — drama info with casts, country, season selector dropdown, episode list filtered by season, "Watch EP 1" CTA, watchlist dropdown
+- [x] 6.3 Create `DramaWatch.tsx` — VideoPlayer, episode nav, progress saving with `content_type: 'drama'`, no intro/outro skip
+- [x] 6.4 Create `DramaSearch.tsx` — search results grid, GuestNav with switcher
+  - **Verify:** `npx tsc --noEmit` — clean, `npm run build` — success
 
-### Phase 10: Watchlist Page
+## Phase 7: Update Existing Pages
 
-- [ ] **10.1** Restyle `Watchlist.tsx`: dark cards (surface bg, subtle borders), dark status tabs (cyan active, input bg inactive), larger poster images
-- [ ] **10.2** Style select dropdown dark (bg input, border subtle, text primary)
-- [ ] **10.3** Update empty state: add CTA link to browse anime
-- [ ] **10.4** Remove `header` prop usage (inline title)
-- [ ] **10.5** Verify: page renders, status filter works, CRUD works
+- [x] 7.1 Update `Watchlist.tsx`: add Anime | Drama content type tabs above the status tabs
+- [x] 7.2 Update `History.tsx`: add Anime | Drama content type tabs
+- [x] 7.3 Update `Watch.tsx`: pass `content_type: 'anime'` with progress/completed saves
+- [x] 7.4 Update `AnimeDetail.tsx`: pass `content_type: 'anime'` with watchlist saves
+  - **Verify:** `npm run build` — success
 
-### Phase 11: History Page
+## Phase 8: Tests
 
-- [ ] **11.1** Restyle `History.tsx`: dark cards, show anime title + poster image (from enriched data), progress bars, cyan/amber accents
-- [ ] **11.2** Update empty state: add CTA link
-- [ ] **11.3** Remove `header` prop usage (inline title)
-- [ ] **11.4** Verify: page renders, links work
+- [x] 8.1 Update existing watchlist/history tests to account for new `content_type` column
+- [x] 8.2 Add feature test for `DramaController` (index, search, show) — mock ConsumetService responses
+- [x] 8.3 Add feature test for `DramaStreamController@show`
+  - **Verify:** `./vendor/bin/pest` — all tests pass
 
-### Phase 12: Auth & Profile Pages
+## Phase 9: Final Verification
 
-- [ ] **12.1** Restyle `Login.tsx`: dark theme (inherits from GuestLayout which shows the logo above the card), cross-link to Register at bottom, full-width amber submit button, dark "Remember me" text, "Forgot password?" link in cyan
-- [ ] **12.2** Restyle `Register.tsx`: same dark treatment with logo via GuestLayout, cross-link to Login at bottom
-- [ ] **12.3** Restyle `Profile/Edit.tsx`: dark cards (surface bg), remove `header` prop, inline title
-- [ ] **12.4** Restyle `Profile/Partials/*.tsx` (3 files): dark headings, dark description text
-- [ ] **12.5** Restyle remaining auth pages (ForgotPassword, ResetPassword, ConfirmPassword, VerifyEmail): dark theme via GuestLayout
-- [ ] **12.6** Verify: login/register/profile all render dark, forms submit correctly
+- [x] 9.1 `npx tsc --noEmit` — clean
+- [x] 9.2 `npm run build` — success
+- [x] 9.3 `./vendor/bin/pest` — all tests pass (68 tests, 276 assertions)
+- [x] 9.4 `vendor/bin/pint` — auto-fix formatting
+- [ ] 9.5 Visual smoke test: `/drama` home, search, detail page, watch page
 
-### Phase 13: Final Verification
-
-- [ ] **13.1** Run `npx tsc --noEmit` — zero errors
-- [ ] **13.2** Run `npm run build` — builds successfully
-- [ ] **13.3** Run `./vendor/bin/pest` — all tests pass
-- [ ] **13.4** Run `vendor/bin/pint --dirty` — clean
-- [ ] **13.5** Run `vendor/bin/phpstan analyse --memory-limit=512M` — 0 errors
-- [ ] **13.6** Visual smoke test: navigate all pages (home, search, detail, watch, watchlist, history, login, register, profile) — all consistently dark themed
+---
 
 ## Verification Commands
 
-```bash
-# TypeScript
-npx tsc --noEmit
-
-# Build
-npm run build
-
-# Tests
-./vendor/bin/pest
-
-# Lint
-vendor/bin/pint --dirty
-vendor/bin/phpstan analyse --memory-limit=512M
-
-# Migration
-php artisan migrate:status
-```
+| Command | Expected |
+|---------|----------|
+| `php artisan migrate` | Success |
+| `php artisan route:list --name=drama` | 4 drama routes |
+| `npx tsc --noEmit` | No errors |
+| `npm run build` | Success |
+| `./vendor/bin/pest` | All tests pass |
 
 ## Acceptance Criteria
 
-1. All pages use the Anime Nexus dark theme — no white/light Breeze remnants
-2. Logo displayed in nav bar, app name is "Anime Nexus"
-3. Color palette matches logo: cyan primary accent, amber secondary/CTA, navy backgrounds
-4. Fonts: Lexend headings, DM Sans body, JetBrains Mono for numbers
-5. All Breeze components (inputs, buttons, modals, dropdowns) are dark-themed
-6. Continue Watching and History show anime title + poster (not raw anime_id)
-7. Anime Detail has prominent "Watch" CTA and dropdown watchlist control
-8. Watch page Previous/Next show episode numbers
-9. All existing tests still pass
-10. TypeScript compiles clean
-11. Vite builds clean
+1. Nav bar shows Anime / Drama pill switcher on all pages
+2. `/drama` shows trending dramas from FlixHQ
+3. `/drama/search?q=vincenzo` returns drama results
+4. `/drama/{id}` shows drama detail with seasons, casts, season selector, episode list
+5. `/drama/{id}/watch` loads the player (streaming may fail — expected)
+6. Watchlist and History pages have content type tabs
+7. Progress saves include `content_type` field
+8. All existing anime functionality unchanged
+9. All tests pass
 
 ## Risks / Unknowns
 
-- **Auth tests may break** if test assertions check for specific CSS classes or text like "Dashboard" — may need to update test expectations
-- **DOMPurify bundle size** — small risk, library is ~14KB minified, acceptable
-- **Profile partials** have hardcoded gray-900/gray-600 text colors from Breeze — need to update all 3 files
+- **Streaming broken**: FlixHQ/Goku watch endpoints return errors. UI will be ready but playback won't work until Consumet is updated.
+- **FlixHQ trending includes movies**: Filter to TV Series only in `GetDramaTrending` action.
+- **Season handling**: FlixHQ episodes have a `season` field — group/filter in DramaDetail.
+- **`id` format difference**: Drama IDs contain slashes (`tv/watch-vincenzo-67955`) — may need URL encoding in routes.

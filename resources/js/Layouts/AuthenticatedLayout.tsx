@@ -1,4 +1,5 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import Dropdown from '@/Components/Dropdown';
 import { Link, router, usePage } from '@inertiajs/react';
 import { PropsWithChildren, useState } from 'react';
@@ -7,11 +8,13 @@ export default function Authenticated({ children }: PropsWithChildren) {
     const user = usePage().props.auth.user;
     const [showingMobileMenu, setShowingMobileMenu] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const isDrama = window.location.pathname.startsWith('/drama');
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.get(route('anime.search'), { q: searchQuery });
+            const searchRoute = isDrama ? route('drama.search') : route('anime.search');
+            router.get(searchRoute, { q: searchQuery });
         }
     };
 
@@ -34,6 +37,11 @@ export default function Authenticated({ children }: PropsWithChildren) {
                             </Link>
                         </div>
 
+                        {/* Content Type Switcher */}
+                        <div className="hidden sm:block">
+                            <ContentTypeSwitcher />
+                        </div>
+
                         {/* Search */}
                         <form
                             onSubmit={handleSearch}
@@ -46,7 +54,7 @@ export default function Authenticated({ children }: PropsWithChildren) {
                                     onChange={(e) =>
                                         setSearchQuery(e.target.value)
                                     }
-                                    placeholder="Search anime..."
+                                    placeholder={isDrama ? "Search dramas..." : "Search anime..."}
                                     className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-10 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
                                 />
                                 <button
@@ -211,10 +219,14 @@ export default function Authenticated({ children }: PropsWithChildren) {
                                 onChange={(e) =>
                                     setSearchQuery(e.target.value)
                                 }
-                                placeholder="Search anime..."
+                                placeholder={isDrama ? "Search dramas..." : "Search anime..."}
                                 className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-4 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
                             />
                         </form>
+                    </div>
+
+                    <div className="px-4 py-2">
+                        <ContentTypeSwitcher />
                     </div>
 
                     <div className="space-y-1 pb-3">

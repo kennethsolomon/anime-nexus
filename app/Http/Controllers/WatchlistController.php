@@ -29,7 +29,12 @@ final class WatchlistController extends Controller
             $status = 'all';
         }
 
-        $query = $user->watchlists()->orderByDesc('updated_at');
+        $contentType = $request->string('content_type', 'anime')->toString();
+        if (! in_array($contentType, ['anime', 'drama'], true)) {
+            $contentType = 'anime';
+        }
+
+        $query = $user->watchlists()->where('content_type', $contentType)->orderByDesc('updated_at');
 
         if ($status !== 'all') {
             $query->where('status', $status);
@@ -38,6 +43,7 @@ final class WatchlistController extends Controller
         return Inertia::render('Watchlist', [
             'watchlist' => $query->get(),
             'currentStatus' => $status,
+            'currentContentType' => $contentType,
         ]);
     }
 
@@ -46,7 +52,7 @@ final class WatchlistController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        /** @var array{anime_id: string, anime_title: string, anime_image: string|null, status?: string} $validated */
+        /** @var array{anime_id: string, anime_title: string, anime_image: string|null, status?: string, content_type?: string} $validated */
         $validated = $request->validated();
 
         $action->handle($user, $validated);

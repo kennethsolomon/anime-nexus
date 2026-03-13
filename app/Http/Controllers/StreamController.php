@@ -117,7 +117,7 @@ final class StreamController extends Controller
 
             // Make relative URLs absolute
             if (! str_starts_with($segmentUrl, 'http')) {
-                $segmentUrl = $baseUrl . $segmentUrl;
+                $segmentUrl = $baseUrl.$segmentUrl;
             }
 
             return route('stream.proxy', [

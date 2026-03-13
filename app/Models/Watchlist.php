@@ -16,6 +16,7 @@ final class Watchlist extends Model
         'anime_title',
         'anime_image',
         'status',
+        'content_type',
     ];
 
     /** @return BelongsTo<User, $this> */

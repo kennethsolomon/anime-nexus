@@ -19,6 +19,7 @@ final class WatchHistory extends Model
         'episode_number',
         'progress_seconds',
         'completed',
+        'content_type',
         'watched_at',
     ];
 

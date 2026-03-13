@@ -1,5 +1,6 @@
 import AnimeCard from '@/Components/AnimeCard';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { AnimeResult, AnimeSearchResponse, WatchHistoryItem } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -61,6 +62,8 @@ function GuestNav() {
                 <Link href="/" className="shrink-0">
                     <ApplicationLogo />
                 </Link>
+
+                <ContentTypeSwitcher />
 
                 <form
                     onSubmit={handleSearch}

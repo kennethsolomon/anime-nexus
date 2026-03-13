@@ -3,14 +3,15 @@ import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import EpisodeList from '@/Components/EpisodeList';
 import VideoPlayer from '@/Components/VideoPlayer';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { AnimeInfo, StreamingResponse } from '@/types/anime';
+import { DramaInfo, StreamingResponse } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
 
-interface WatchProps {
-    anime: AnimeInfo;
+interface DramaWatchProps {
+    drama: DramaInfo;
     streaming: StreamingResponse;
     episodeId: string;
+    mediaId: string;
     progress: number;
 }
 
@@ -19,7 +20,7 @@ function GuestNav() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.get(route('anime.search'), { q: searchQuery });
+            router.get(route('drama.search'), { q: searchQuery });
         }
     };
 
@@ -35,7 +36,7 @@ function GuestNav() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search anime..."
+                        placeholder="Search dramas..."
                         className="w-full rounded-full border-subtle bg-input py-2 pl-4 pr-10 text-sm text-primary placeholder-theme-muted focus:border-accent focus:ring-1 focus:ring-accent"
                     />
                 </form>
@@ -48,25 +49,20 @@ function GuestNav() {
     );
 }
 
-function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
-    const { auth } = usePage().props as {
-        auth?: { user?: { id: number } };
-    };
+function DramaWatchContent({ drama, streaming, episodeId, mediaId, progress }: DramaWatchProps) {
+    const { auth } = usePage().props as { auth?: { user?: { id: number } } };
 
     const source =
         streaming.sources?.find((s) => s.quality === 'default' || s.quality === 'auto') ||
         streaming.sources?.find((s) => s.isM3U8) ||
         streaming.sources?.[0];
 
-    const currentEpisode = anime.episodes?.find((ep) => ep.id === episodeId);
-    const currentIndex =
-        anime.episodes?.findIndex((ep) => ep.id === episodeId) ?? -1;
-    const prevEpisode =
-        currentIndex > 0 ? anime.episodes?.[currentIndex - 1] : null;
-    const nextEpisode =
-        anime.episodes && currentIndex < anime.episodes.length - 1
-            ? anime.episodes[currentIndex + 1]
-            : null;
+    const currentEpisode = drama.episodes?.find((ep) => ep.id === episodeId);
+    const currentIndex = drama.episodes?.findIndex((ep) => ep.id === episodeId) ?? -1;
+    const prevEpisode = currentIndex > 0 ? drama.episodes?.[currentIndex - 1] : null;
+    const nextEpisode = drama.episodes && currentIndex < drama.episodes.length - 1
+        ? drama.episodes[currentIndex + 1]
+        : null;
 
     const saveProgress = useCallback(
         (seconds: number) => {
@@ -74,19 +70,19 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
             router.post(
                 route('history.store'),
                 {
-                    anime_id: anime.id,
-                    anime_title: anime.title,
-                    anime_image: anime.image,
+                    anime_id: drama.id,
+                    anime_title: drama.title,
+                    anime_image: drama.image,
                     episode_id: episodeId,
                     episode_number: currentEpisode.number,
                     progress_seconds: seconds,
                     completed: false,
-                    content_type: 'anime',
+                    content_type: 'drama',
                 },
                 { preserveScroll: true, preserveState: true },
             );
         },
-        [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode],
+        [auth, drama.id, drama.title, drama.image, episodeId, currentEpisode],
     );
 
     const handleEnded = useCallback(() => {
@@ -94,42 +90,34 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
             router.post(
                 route('history.store'),
                 {
-                    anime_id: anime.id,
-                    anime_title: anime.title,
-                    anime_image: anime.image,
+                    anime_id: drama.id,
+                    anime_title: drama.title,
+                    anime_image: drama.image,
                     episode_id: episodeId,
                     episode_number: currentEpisode.number,
                     progress_seconds: 0,
                     completed: true,
-                    content_type: 'anime',
+                    content_type: 'drama',
                 },
                 { preserveScroll: true, preserveState: true },
             );
         }
         if (nextEpisode) {
             router.get(
-                route('anime.watch', {
-                    id: anime.id,
-                    episodeId: nextEpisode.id,
-                }),
+                route('drama.watch', { id: drama.id, episodeId: nextEpisode.id, mediaId }),
             );
         }
-    }, [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode, nextEpisode]);
+    }, [auth, drama.id, drama.title, drama.image, episodeId, currentEpisode, nextEpisode, mediaId]);
 
     if (streaming.error || !source) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <div className="rounded-xl border border-danger/30 bg-danger/10 p-8 text-center">
-                    <h2 className="text-xl font-bold text-danger">
-                        Failed to load video
-                    </h2>
+                    <h2 className="text-xl font-bold text-danger">Failed to load video</h2>
                     <p className="mt-2 text-theme-secondary">
-                        {streaming.message || 'Streaming source unavailable'}
+                        {streaming.message || 'Streaming source unavailable. Drama streaming may not be available yet.'}
                     </p>
-                    <button
-                        onClick={() => router.reload()}
-                        className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover"
-                    >
+                    <button onClick={() => router.reload()} className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover">
                         Retry
                     </button>
                 </div>
@@ -139,36 +127,23 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
 
     return (
         <>
-            <Head
-                title={`${anime.title} - Episode ${currentEpisode?.number || ''}`}
-            />
+            <Head title={`${drama.title} - Episode ${currentEpisode?.number || ''}`} />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    {/* Player */}
                     <div className="lg:col-span-2">
                         <VideoPlayer
                             url={source.url}
                             subtitles={streaming.subtitles}
                             startAt={progress}
-                            intro={streaming.intro}
-                            outro={streaming.outro}
                             onProgress={saveProgress}
                             onEnded={handleEnded}
                         />
 
-                        {/* Episode navigation */}
                         <div className="mt-4 flex items-center justify-between gap-2">
                             {prevEpisode ? (
                                 <button
-                                    onClick={() =>
-                                        router.get(
-                                            route('anime.watch', {
-                                                id: anime.id,
-                                                episodeId: prevEpisode.id,
-                                            }),
-                                        )
-                                    }
+                                    onClick={() => router.get(route('drama.watch', { id: drama.id, episodeId: prevEpisode.id, mediaId }))}
                                     className="inline-flex items-center gap-1 rounded-lg border border-muted bg-input px-4 py-2 text-sm text-primary transition hover:border-accent hover:bg-surface"
                                 >
                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,20 +156,12 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                             )}
 
                             <h2 className="min-w-0 truncate text-center font-display text-lg font-semibold text-primary">
-                                {currentEpisode?.title ||
-                                    `Episode ${currentEpisode?.number}`}
+                                {currentEpisode?.title || `Episode ${currentEpisode?.number}`}
                             </h2>
 
                             {nextEpisode ? (
                                 <button
-                                    onClick={() =>
-                                        router.get(
-                                            route('anime.watch', {
-                                                id: anime.id,
-                                                episodeId: nextEpisode.id,
-                                            }),
-                                        )
-                                    }
+                                    onClick={() => router.get(route('drama.watch', { id: drama.id, episodeId: nextEpisode.id, mediaId }))}
                                     className="inline-flex items-center gap-1 rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-base transition hover:bg-secondary-hover"
                                 >
                                     EP {nextEpisode.number}
@@ -207,24 +174,25 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                             )}
                         </div>
 
-                        {/* Anime title link */}
                         <div className="mt-3">
                             <Link
-                                href={route('anime.show', { id: anime.id })}
+                                href={route('drama.show', { id: drama.id })}
                                 className="text-sm text-theme-secondary transition hover:text-accent"
                             >
-                                {anime.title}
+                                {drama.title}
                             </Link>
                         </div>
                     </div>
 
-                    {/* Episode list sidebar */}
                     <div>
-                        {anime.episodes && (
+                        {drama.episodes && (
                             <EpisodeList
-                                animeId={anime.id}
-                                episodes={anime.episodes}
+                                animeId={drama.id}
+                                episodes={drama.episodes}
                                 currentEpisodeId={episodeId}
+                                buildEpisodeUrl={(epId) =>
+                                    route('drama.watch', { id: drama.id, episodeId: epId, mediaId })
+                                }
                             />
                         )}
                     </div>
@@ -234,13 +202,13 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
     );
 }
 
-export default function Watch(props: WatchProps) {
+export default function DramaWatch(props: DramaWatchProps) {
     const { auth } = usePage().props as { auth?: { user?: unknown } };
 
     if (auth?.user) {
         return (
             <AuthenticatedLayout>
-                <WatchContent {...props} />
+                <DramaWatchContent {...props} />
             </AuthenticatedLayout>
         );
     }
@@ -248,7 +216,7 @@ export default function Watch(props: WatchProps) {
     return (
         <div className="min-h-screen bg-base">
             <GuestNav />
-            <WatchContent {...props} />
+            <DramaWatchContent {...props} />
         </div>
     );
 }

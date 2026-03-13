@@ -10,7 +10,7 @@ use App\Models\WatchHistory;
 final class SaveWatchProgress
 {
     /**
-     * @param  array{anime_id: string, anime_title?: string, anime_image?: string, episode_id: string, episode_number: int, progress_seconds: int, completed?: bool}  $data
+     * @param  array{anime_id: string, anime_title?: string, anime_image?: string, episode_id: string, episode_number: int, progress_seconds: int, completed?: bool, content_type?: string}  $data
      */
     public function handle(User $user, array $data): WatchHistory
     {
@@ -27,6 +27,10 @@ final class SaveWatchProgress
 
         if (isset($data['anime_image'])) {
             $attributes['anime_image'] = $data['anime_image'];
+        }
+
+        if (isset($data['content_type'])) {
+            $attributes['content_type'] = $data['content_type'];
         }
 
         return $user->watchHistories()->updateOrCreate(

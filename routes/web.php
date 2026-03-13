@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AnimeController;
+use App\Http\Controllers\DramaController;
+use App\Http\Controllers\DramaStreamController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StreamController;
@@ -16,6 +18,12 @@ Route::get('/genre/{genre}', [AnimeController::class, 'genre'])->name('anime.gen
 Route::get('/anime/{id}', [AnimeController::class, 'show'])->name('anime.show');
 Route::get('/anime/{id}/watch', [StreamController::class, 'show'])->name('anime.watch');
 Route::get('/stream/proxy', [StreamController::class, 'proxy'])->name('stream.proxy');
+
+// Drama routes
+Route::get('/drama', [DramaController::class, 'index'])->name('drama.home');
+Route::get('/drama/search', [DramaController::class, 'search'])->name('drama.search');
+Route::get('/drama/{id}/watch', [DramaStreamController::class, 'show'])->where('id', '.*')->name('drama.watch');
+Route::get('/drama/{id}', [DramaController::class, 'show'])->where('id', '.*')->name('drama.show');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {

@@ -23,6 +23,7 @@ final class AddToWatchlistRequest extends FormRequest
             'anime_title' => ['required', 'string', 'max:255'],
             'anime_image' => ['nullable', 'url', 'max:2048'],
             'status' => ['sometimes', 'string', 'in:watching,plan_to_watch,completed,dropped'],
+            'content_type' => ['sometimes', 'string', 'in:anime,drama'],
         ];
     }
 }

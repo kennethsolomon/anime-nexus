@@ -26,6 +26,7 @@ final class SaveProgressRequest extends FormRequest
             'episode_number' => ['required', 'integer', 'min:1'],
             'progress_seconds' => ['required', 'integer', 'min:0'],
             'completed' => ['sometimes', 'boolean'],
+            'content_type' => ['sometimes', 'string', 'in:anime,drama'],
         ];
     }
 }

@@ -19,8 +19,18 @@ final class HistoryController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
+        $contentType = $request->string('content_type', 'anime')->toString();
+        if (! in_array($contentType, ['anime', 'drama'], true)) {
+            $contentType = 'anime';
+        }
+
+        $history = $action->handle($user)
+            ->where('content_type', $contentType)
+            ->values();
+
         return Inertia::render('History', [
-            'history' => $action->handle($user),
+            'history' => $history,
+            'currentContentType' => $contentType,
         ]);
     }
 

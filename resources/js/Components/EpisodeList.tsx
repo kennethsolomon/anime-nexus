@@ -11,6 +11,7 @@ interface EpisodeListProps {
     episodes: Episode[];
     currentEpisodeId?: string;
     watchedEpisodes?: string[];
+    buildEpisodeUrl?: (episodeId: string) => string;
 }
 
 export default function EpisodeList({
@@ -18,6 +19,7 @@ export default function EpisodeList({
     episodes,
     currentEpisodeId,
     watchedEpisodes = [],
+    buildEpisodeUrl,
 }: EpisodeListProps) {
     return (
         <div className="max-h-96 overflow-y-auto rounded-xl border border-subtle bg-surface">
@@ -34,7 +36,7 @@ export default function EpisodeList({
                     return (
                         <Link
                             key={episode.id}
-                            href={route('anime.watch', {
+                            href={buildEpisodeUrl ? buildEpisodeUrl(episode.id) : route('anime.watch', {
                                 id: animeId,
                                 episodeId: episode.id,
                             })}

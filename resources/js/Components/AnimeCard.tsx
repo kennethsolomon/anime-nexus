@@ -7,6 +7,7 @@ interface AnimeCardProps {
     rating?: number;
     type?: string;
     episodeCount?: number;
+    detailRoute?: string;
 }
 
 export default function AnimeCard({
@@ -16,10 +17,11 @@ export default function AnimeCard({
     rating,
     type,
     episodeCount,
+    detailRoute,
 }: AnimeCardProps) {
     return (
         <Link
-            href={route('anime.show', { id })}
+            href={detailRoute || route('anime.show', { id })}
             className="group block overflow-hidden rounded-xl border border-subtle bg-surface shadow-md transition duration-300 hover:-translate-y-1 hover:border-muted hover:shadow-lg hover:shadow-accent/5"
         >
             <div className="relative aspect-[3/4] overflow-hidden">
