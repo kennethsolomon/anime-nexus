@@ -1,0 +1,11 @@
+services:
+  consumet:
+    build:
+      context: https://github.com/consumet/api.consumet.org.git
+      dockerfile: Dockerfile
+    container_name: consumet-api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    restart: unless-stopped
