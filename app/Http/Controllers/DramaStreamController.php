@@ -32,12 +32,12 @@ final class DramaStreamController extends Controller
         $tmdbId = $consumet->findTmdbId($drama['title'] ?? '', $tmdbType, $releaseYear);
 
         if ($tmdbId && $isMovie) {
-            $embedUrl = "https://vidlink.pro/movie/{$tmdbId}";
+            $embedUrl = "https://vidsrc.cc/v2/embed/movie/{$tmdbId}";
         } elseif ($tmdbId) {
             $currentEpisode = collect($drama['episodes'] ?? [])->firstWhere('id', $episodeId);
             $season = $currentEpisode['season'] ?? 1;
             $episode = $currentEpisode['number'] ?? 1;
-            $embedUrl = "https://vidlink.pro/tv/{$tmdbId}/{$season}/{$episode}";
+            $embedUrl = "https://vidsrc.cc/v2/embed/tv/{$tmdbId}/{$season}/{$episode}";
         }
 
         $progress = null;
