@@ -27,5 +27,5 @@ it('passes page parameter', function (): void {
 
     expect($result['results'])->toBeEmpty();
 
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'page=3'));
+    Http::assertSent(fn ($request): bool => str_contains((string) $request->url(), 'page=3'));
 });

@@ -25,5 +25,5 @@ it('passes provider parameter', function (): void {
     $action = app(GetAnimeDetail::class);
     $action->handle('naruto', 'gogoanime');
 
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'gogoanime'));
+    Http::assertSent(fn ($request): bool => str_contains((string) $request->url(), 'gogoanime'));
 });

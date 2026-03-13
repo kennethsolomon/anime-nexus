@@ -83,7 +83,7 @@ it('renders drama watch page', function (): void {
 it('filters trending to tv series only', function (): void {
     $response = $this->get(route('drama.home'));
 
-    $response->assertInertia(function ($page) {
+    $response->assertInertia(function ($page): void {
         $trending = $page->toArray()['props']['trending'];
         foreach ($trending['results'] as $item) {
             expect($item['type'])->toBe('TV Series');
