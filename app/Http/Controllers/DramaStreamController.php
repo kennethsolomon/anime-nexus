@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Actions\Drama\GetDramaDetail;
 use App\Actions\Drama\GetDramaStreamingLinks;
 use App\Models\WatchHistory;
+use App\Services\ConsumetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -19,6 +20,7 @@ final class DramaStreamController extends Controller
         Request $request,
         GetDramaStreamingLinks $streamingAction,
         GetDramaDetail $detailAction,
+        ConsumetService $consumet,
     ): Response {
         $episodeId = $request->string('episodeId')->toString();
         $mediaId = $request->string('mediaId')->toString();
@@ -52,6 +54,20 @@ final class DramaStreamController extends Controller
             }, $streaming['subtitles']);
         }
 
+        // Build embed URL as fallback when HLS extraction fails
+        $embedUrl = null;
+        $currentEpisode = collect($drama['episodes'] ?? [])->firstWhere('id', $episodeId);
+
+        if ($currentEpisode) {
+            $tmdbId = $consumet->findTmdbId($drama['title'] ?? '', 'TV Series');
+
+            if ($tmdbId) {
+                $season = $currentEpisode['season'] ?? 1;
+                $episode = $currentEpisode['number'] ?? 1;
+                $embedUrl = "https://vidlink.pro/tv/{$tmdbId}/{$season}/{$episode}";
+            }
+        }
+
         $progress = null;
         if (Auth::check()) {
             /** @var \App\Models\User $user */
@@ -67,6 +83,7 @@ final class DramaStreamController extends Controller
             'streaming' => $streaming,
             'episodeId' => $episodeId,
             'mediaId' => $mediaId,
+            'embedUrl' => $embedUrl,
             'progress' => $progress instanceof WatchHistory ? $progress->progress_seconds : 0,
         ]);
     }

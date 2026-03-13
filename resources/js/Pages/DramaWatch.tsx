@@ -12,6 +12,7 @@ interface DramaWatchProps {
     streaming: StreamingResponse;
     episodeId: string;
     mediaId: string;
+    embedUrl?: string;
     progress: number;
 }
 
@@ -49,7 +50,7 @@ function GuestNav() {
     );
 }
 
-function DramaWatchContent({ drama, streaming, episodeId, mediaId, progress }: DramaWatchProps) {
+function DramaWatchContent({ drama, streaming, episodeId, mediaId, embedUrl, progress }: DramaWatchProps) {
     const { auth } = usePage().props as { auth?: { user?: { id: number } } };
 
     const source =
@@ -117,15 +118,26 @@ function DramaWatchContent({ drama, streaming, episodeId, mediaId, progress }: D
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="lg:col-span-2">
                         {streaming.error || !source ? (
-                            <div className="rounded-xl border border-danger/30 bg-danger/10 p-8 text-center">
-                                <h2 className="text-xl font-bold text-danger">Failed to load video</h2>
-                                <p className="mt-2 text-theme-secondary">
-                                    {streaming.message || 'Streaming source unavailable. Drama streaming may not be available yet.'}
-                                </p>
-                                <button onClick={() => router.reload()} className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover">
-                                    Retry
-                                </button>
-                            </div>
+                            embedUrl ? (
+                                <div className="aspect-video w-full overflow-hidden rounded-lg">
+                                    <iframe
+                                        src={embedUrl}
+                                        className="h-full w-full border-0"
+                                        allowFullScreen
+                                        referrerPolicy="origin"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-danger/30 bg-danger/10 p-8 text-center">
+                                    <h2 className="text-xl font-bold text-danger">Failed to load video</h2>
+                                    <p className="mt-2 text-theme-secondary">
+                                        {streaming.message || 'Streaming source unavailable.'}
+                                    </p>
+                                    <button onClick={() => router.reload()} className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover">
+                                        Retry
+                                    </button>
+                                </div>
+                            )
                         ) : (
                             <VideoPlayer
                                 url={source.url}

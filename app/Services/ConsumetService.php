@@ -168,6 +168,24 @@ final readonly class ConsumetService
     }
 
     /**
+     * Search TMDB for a title and return the first matching TMDB ID.
+     */
+    public function findTmdbId(string $title, string $type = 'TV Series'): ?int
+    {
+        $cacheKey = "consumet:tmdb:search:{$title}:{$type}";
+
+        $result = $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->get('/meta/tmdb/'.urlencode($title)));
+
+        foreach ($result['results'] ?? [] as $item) {
+            if (($item['type'] ?? '') === $type && ! empty($item['id'])) {
+                return (int) $item['id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get fresh streaming links bypassing cache (for retry).
      *
      * @return array<string, mixed>
