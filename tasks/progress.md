@@ -147,3 +147,10 @@
 - `npm run build` — success
 - `./vendor/bin/pest` — 68 tests, 276 assertions, all pass
 - `vendor/bin/pint` — auto-fixed formatting
+- Visual smoke test via Playwright:
+  - `/drama` home — trending grid renders, ContentTypeSwitcher works
+  - `/drama/search?q=vincenzo` — search results render correctly
+  - `/drama/tv/watch-vincenzo-67955` — detail page with season selector, casts, episode list
+  - `/drama/tv/watch-vincenzo-67955/watch?episodeId=1167571&mediaId=tv/watch-vincenzo-67955` — watch page shows error inline with episode list sidebar visible
+- **Fix:** `DramaWatch.tsx` — moved streaming error from early return to inline conditional so episode list, nav buttons, and drama title link remain visible when streaming fails
+- Committed: `5b49698`

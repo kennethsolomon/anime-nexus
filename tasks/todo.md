@@ -113,7 +113,7 @@ Add a content type switcher (Anime | Drama) to the nav bar. Each mode has its ow
 - [x] 9.2 `npm run build` — success
 - [x] 9.3 `./vendor/bin/pest` — all tests pass (68 tests, 276 assertions)
 - [x] 9.4 `vendor/bin/pint` — auto-fix formatting
-- [ ] 9.5 Visual smoke test: `/drama` home, search, detail page, watch page
+- [x] 9.5 Visual smoke test: `/drama` home, search, detail page, watch page
 
 ---
 
