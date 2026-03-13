@@ -1,12 +1,20 @@
-# Anime Nexus
+<p align="center">
+  <img src="public/images/anime-nexus-logo.png" alt="Anime Nexus" width="200">
+</p>
 
-A full-stack anime and drama streaming app built with Laravel 12, React 19, Inertia.js, and TypeScript. Browse, search, and stream content with watch progress tracking, watchlist management, and history.
+<h1 align="center">Anime Nexus</h1>
 
-![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat&logo=typescript&logoColor=white)
-![PHPStan](https://img.shields.io/badge/PHPStan-level%209-blue?style=flat)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat)
+<p align="center">A full-stack anime and drama streaming app built with Laravel 12, React 19, Inertia.js, and TypeScript. Browse, search, and stream content with watch progress tracking, watchlist management, and history.</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white" alt="Laravel">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=black" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/PHPStan-level%209-blue?style=flat" alt="PHPStan">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat" alt="License">
+</p>
+
+---
 
 ## Features
 
