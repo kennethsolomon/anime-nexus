@@ -28,7 +28,8 @@ final class DramaStreamController extends Controller
         $embedUrl = null;
         $isMovie = ($drama['type'] ?? '') === 'Movie' || str_starts_with($id, 'movie/');
         $tmdbType = $isMovie ? 'Movie' : 'TV Series';
-        $tmdbId = $consumet->findTmdbId($drama['title'] ?? '', $tmdbType);
+        $releaseYear = substr((string) ($drama['releaseDate'] ?? ''), 0, 4) ?: null;
+        $tmdbId = $consumet->findTmdbId($drama['title'] ?? '', $tmdbType, $releaseYear);
 
         if ($tmdbId && $isMovie) {
             $embedUrl = "https://vidlink.pro/movie/{$tmdbId}";

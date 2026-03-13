@@ -168,21 +168,31 @@ final readonly class ConsumetService
     }
 
     /**
-     * Search TMDB for a title and return the first matching TMDB ID.
+     * Search TMDB for a title and return the best matching TMDB ID.
      */
-    public function findTmdbId(string $title, string $type = 'TV Series'): ?int
+    public function findTmdbId(string $title, string $type = 'TV Series', ?string $releaseYear = null): ?int
     {
-        $cacheKey = "consumet:tmdb:search:{$title}:{$type}";
+        $cacheKey = "consumet:tmdb:search:{$title}:{$type}:{$releaseYear}";
 
         $result = $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->get('/meta/tmdb/'.urlencode($title)));
 
-        foreach ($result['results'] ?? [] as $item) {
-            if (($item['type'] ?? '') === $type && ! empty($item['id'])) {
-                return (int) $item['id'];
+        $candidates = array_filter(
+            $result['results'] ?? [],
+            fn (array $item): bool => ($item['type'] ?? '') === $type && ! empty($item['id']),
+        );
+
+        if ($releaseYear !== null) {
+            foreach ($candidates as $item) {
+                $itemYear = substr((string) ($item['releaseDate'] ?? ''), 0, 4);
+                if ($itemYear === $releaseYear) {
+                    return (int) $item['id'];
+                }
             }
         }
 
-        return null;
+        $first = reset($candidates);
+
+        return $first !== false ? (int) $first['id'] : null;
     }
 
     /**
