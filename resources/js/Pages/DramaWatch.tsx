@@ -109,22 +109,6 @@ function DramaWatchContent({ drama, streaming, episodeId, mediaId, progress }: D
         }
     }, [auth, drama.id, drama.title, drama.image, episodeId, currentEpisode, nextEpisode, mediaId]);
 
-    if (streaming.error || !source) {
-        return (
-            <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                <div className="rounded-xl border border-danger/30 bg-danger/10 p-8 text-center">
-                    <h2 className="text-xl font-bold text-danger">Failed to load video</h2>
-                    <p className="mt-2 text-theme-secondary">
-                        {streaming.message || 'Streaming source unavailable. Drama streaming may not be available yet.'}
-                    </p>
-                    <button onClick={() => router.reload()} className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover">
-                        Retry
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <>
             <Head title={`${drama.title} - Episode ${currentEpisode?.number || ''}`} />
@@ -132,13 +116,25 @@ function DramaWatchContent({ drama, streaming, episodeId, mediaId, progress }: D
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="lg:col-span-2">
-                        <VideoPlayer
-                            url={source.url}
-                            subtitles={streaming.subtitles}
-                            startAt={progress}
-                            onProgress={saveProgress}
-                            onEnded={handleEnded}
-                        />
+                        {streaming.error || !source ? (
+                            <div className="rounded-xl border border-danger/30 bg-danger/10 p-8 text-center">
+                                <h2 className="text-xl font-bold text-danger">Failed to load video</h2>
+                                <p className="mt-2 text-theme-secondary">
+                                    {streaming.message || 'Streaming source unavailable. Drama streaming may not be available yet.'}
+                                </p>
+                                <button onClick={() => router.reload()} className="mt-4 rounded-lg bg-secondary px-4 py-2 font-medium text-base hover:bg-secondary-hover">
+                                    Retry
+                                </button>
+                            </div>
+                        ) : (
+                            <VideoPlayer
+                                url={source.url}
+                                subtitles={streaming.subtitles}
+                                startAt={progress}
+                                onProgress={saveProgress}
+                                onEnded={handleEnded}
+                            />
+                        )}
 
                         <div className="mt-4 flex items-center justify-between gap-2">
                             {prevEpisode ? (
