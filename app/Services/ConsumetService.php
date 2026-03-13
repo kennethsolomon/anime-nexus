@@ -176,15 +176,18 @@ final readonly class ConsumetService
 
         $result = $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->get('/meta/tmdb/'.urlencode($title)));
 
+        /** @var array<int, mixed> $results */
+        $results = is_array($result['results'] ?? null) ? $result['results'] : [];
         $candidates = array_filter(
-            $result['results'] ?? [],
-            fn (array $item): bool => ($item['type'] ?? '') === $type && ! empty($item['id']),
+            $results,
+            fn (mixed $item): bool => is_array($item) && (($item['type'] ?? '') === $type) && ! empty($item['id']),
         );
 
         if ($releaseYear !== null) {
             foreach ($candidates as $item) {
-                $itemYear = substr((string) ($item['releaseDate'] ?? ''), 0, 4);
-                if ($itemYear === $releaseYear) {
+                $releaseDate = is_string($item['releaseDate'] ?? null) ? $item['releaseDate'] : '';
+                $itemYear = substr($releaseDate, 0, 4);
+                if ($itemYear === $releaseYear && (is_int($item['id']) || is_string($item['id']))) {
                     return (int) $item['id'];
                 }
             }
@@ -192,7 +195,11 @@ final readonly class ConsumetService
 
         $first = reset($candidates);
 
-        return $first !== false ? (int) $first['id'] : null;
+        if ($first !== false && (is_int($first['id']) || is_string($first['id']))) {
+            return (int) $first['id'];
+        }
+
+        return null;
     }
 
     /**

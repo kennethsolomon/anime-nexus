@@ -22,7 +22,7 @@ final readonly class GetDramaTrending
         if (isset($result['results']) && is_array($result['results'])) {
             $result['results'] = array_values(array_filter(
                 $result['results'],
-                fn (array $item): bool => ($item['type'] ?? '') === 'TV Series',
+                fn (mixed $item): bool => is_array($item) && (($item['type'] ?? '') === 'TV Series'),
             ));
         }
 

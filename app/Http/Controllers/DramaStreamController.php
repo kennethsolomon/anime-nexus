@@ -28,15 +28,21 @@ final class DramaStreamController extends Controller
         $embedUrl = null;
         $isMovie = ($drama['type'] ?? '') === 'Movie' || str_starts_with($id, 'movie/');
         $tmdbType = $isMovie ? 'Movie' : 'TV Series';
-        $releaseYear = substr((string) ($drama['releaseDate'] ?? ''), 0, 4) ?: null;
-        $tmdbId = $consumet->findTmdbId($drama['title'] ?? '', $tmdbType, $releaseYear);
+        $releaseDate = isset($drama['releaseDate']) && is_string($drama['releaseDate']) ? $drama['releaseDate'] : '';
+        $releaseYear = substr($releaseDate, 0, 4) ?: null;
+        $title = isset($drama['title']) && is_string($drama['title']) ? $drama['title'] : '';
+        $tmdbId = $consumet->findTmdbId($title, $tmdbType, $releaseYear);
 
         if ($tmdbId && $isMovie) {
             $embedUrl = "https://vidsrc.cc/v2/embed/movie/{$tmdbId}";
         } elseif ($tmdbId) {
-            $currentEpisode = collect($drama['episodes'] ?? [])->firstWhere('id', $episodeId);
-            $season = $currentEpisode['season'] ?? 1;
-            $episode = $currentEpisode['number'] ?? 1;
+            /** @var array<int, array<string, mixed>> $episodes */
+            $episodes = is_array($drama['episodes'] ?? null) ? $drama['episodes'] : [];
+            $currentEpisode = collect($episodes)->firstWhere('id', $episodeId);
+            $seasonRaw = is_array($currentEpisode) ? ($currentEpisode['season'] ?? 1) : 1;
+            $episodeRaw = is_array($currentEpisode) ? ($currentEpisode['number'] ?? 1) : 1;
+            $season = is_int($seasonRaw) ? $seasonRaw : (is_string($seasonRaw) ? (int) $seasonRaw : 1);
+            $episode = is_int($episodeRaw) ? $episodeRaw : (is_string($episodeRaw) ? (int) $episodeRaw : 1);
             $embedUrl = "https://vidsrc.cc/v2/embed/tv/{$tmdbId}/{$season}/{$episode}";
         }
 

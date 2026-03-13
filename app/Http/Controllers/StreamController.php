@@ -27,10 +27,15 @@ final class StreamController extends Controller
         $streaming = $streamingAction->handle($episodeId);
 
         // Rewrite source and subtitle URLs to go through our proxy
-        $referer = $streaming['headers']['Referer'] ?? '';
+        /** @var array<string, mixed> $headers */
+        $headers = is_array($streaming['headers'] ?? null) ? $streaming['headers'] : [];
+        $referer = isset($headers['Referer']) && is_string($headers['Referer']) ? $headers['Referer'] : '';
 
-        if (! empty($streaming['sources'])) {
-            $streaming['sources'] = array_map(function (array $source) use ($referer): array {
+        if (! empty($streaming['sources']) && is_array($streaming['sources'])) {
+            $streaming['sources'] = array_map(function (mixed $source) use ($referer): array {
+                if (! is_array($source)) {
+                    return [];
+                }
                 $source['url'] = route('stream.proxy', [
                     'url' => $source['url'],
                     'referer' => $referer,
@@ -40,8 +45,11 @@ final class StreamController extends Controller
             }, $streaming['sources']);
         }
 
-        if (! empty($streaming['subtitles'])) {
-            $streaming['subtitles'] = array_map(function (array $sub) use ($referer): array {
+        if (! empty($streaming['subtitles']) && is_array($streaming['subtitles'])) {
+            $streaming['subtitles'] = array_map(function (mixed $sub) use ($referer): array {
+                if (! is_array($sub)) {
+                    return [];
+                }
                 if (! empty($sub['url'])) {
                     $sub['url'] = route('stream.proxy', [
                         'url' => $sub['url'],
@@ -93,7 +101,7 @@ final class StreamController extends Controller
             abort($response->status());
         }
 
-        $contentType = $response->header('Content-Type') ?? 'application/octet-stream';
+        $contentType = $response->header('Content-Type') ?: 'application/octet-stream';
         $body = $response->body();
 
         // For HLS manifests, rewrite segment URLs to also go through proxy
