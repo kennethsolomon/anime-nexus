@@ -62,7 +62,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/kennethsolomon/watch-anime.git
+git clone https://github.com/kennethsolomon/anime-nexus.git
 cd watch-anime
 
 # Install dependencies
