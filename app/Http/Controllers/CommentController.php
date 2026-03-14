@@ -40,7 +40,7 @@ final class CommentController extends Controller
         ]);
 
         // Strip HTML tags for XSS prevention
-        $validated['body'] = strip_tags($validated['body']);
+        $validated['body'] = strip_tags((string) $validated['body']);
 
         Comment::create([
             'user_id' => $user->id,

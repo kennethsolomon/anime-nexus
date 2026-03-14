@@ -61,7 +61,8 @@ final class GetUserStats
             // Streak starts from today or yesterday
             if ($activityDays[0] === $today || $activityDays[0] === $yesterday) {
                 $streak = 1;
-                for ($i = 1; $i < count($activityDays); $i++) {
+                $counter = count($activityDays);
+                for ($i = 1; $i < $counter; $i++) {
                     $expected = now()->subDays($i + ($activityDays[0] === $yesterday ? 1 : 0))->format('Y-m-d');
                     if ($activityDays[$i] === $expected) {
                         $streak++;
