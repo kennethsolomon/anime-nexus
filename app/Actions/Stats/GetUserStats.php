@@ -10,15 +10,7 @@ use Illuminate\Support\Facades\DB;
 final class GetUserStats
 {
     /**
-     * @return array{
-     *     totalEpisodes: int,
-     *     totalSeconds: int,
-     *     completionRate: float,
-     *     currentStreak: int,
-     *     mostWatched: array<int, array{anime_id: string, anime_title: string, anime_image: string|null, episode_count: int}>,
-     *     animeCount: int,
-     *     dramaCount: int,
-     * }
+     * @return array<string, mixed>
      */
     public function handle(User $user): array
     {
@@ -37,16 +29,18 @@ final class GetUserStats
         $completionRate = $uniqueAnime > 0 ? round(($completedAnime / $uniqueAnime) * 100, 1) : 0;
 
         // Most watched (top 5 by episode count)
-        $mostWatched = $user->watchHistories()
+        /** @var array<int, array{anime_id: string, anime_title: string, anime_image: string|null, episode_count: int}> $mostWatched */
+        $mostWatched = DB::table('watch_histories')
+            ->where('user_id', $user->id)
             ->select('anime_id', 'anime_title', 'anime_image', DB::raw('COUNT(*) as episode_count'))
             ->groupBy('anime_id', 'anime_title', 'anime_image')
             ->orderByDesc('episode_count')
             ->limit(5)
             ->get()
-            ->map(fn ($row): array => [
-                'anime_id' => $row->anime_id,
-                'anime_title' => $row->anime_title ?? $row->anime_id,
-                'anime_image' => $row->anime_image,
+            ->map(fn (object $row): array => [
+                'anime_id' => (string) $row->anime_id,
+                'anime_title' => (string) ($row->anime_title ?? $row->anime_id),
+                'anime_image' => $row->anime_image !== null ? (string) $row->anime_image : null,
                 'episode_count' => (int) $row->episode_count,
             ])
             ->toArray();
