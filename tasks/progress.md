@@ -320,6 +320,32 @@ Combined in single edit to `resources/js/Components/VideoPlayer.tsx`:
 - `npm run build` — success
 - `./vendor/bin/pest` — 81 tests, 339 assertions, all pass
 
+## 2026-03-15 — CheckNewEpisodes: Notification Trigger
+
+### Job + Middleware + Tests
+- Created `app/Jobs/CheckNewEpisodes.php`
+  - Accepts user ID, fetches "Watching" items (limit 10)
+  - For each: calls ConsumetService to get totalEpisodes (uses 24h cache)
+  - Compares against MAX(episode_number) from watch_histories
+  - Creates EpisodeNotification if new episodes, with dedup (skip if unread exists)
+  - Handles both anime (getAnimeInfo) and drama (getDramaInfo)
+  - Try/catch per item — failure logged, doesn't crash job
+- Created `app/Http/Middleware/CheckNewEpisodesMiddleware.php`
+  - Dispatches job on first auth page load per session
+  - Uses session('notifications_checked') flag to avoid repeat
+- Registered middleware in bootstrap/app.php (web group)
+- Tests:
+  - 5 feature tests for job (creates notification, no dup, single episode, up-to-date, skip completed)
+  - 3 feature tests for middleware (dispatch once, no repeat, no guest dispatch)
+  - Used Http::fake() instead of Mockery (ConsumetService is final class)
+  - First attempt: unit tests failed (no DB access) — moved to Feature tests
+
+### Verification
+- `npx tsc --noEmit` — clean
+- `npm run build` — success
+- `vendor/bin/pint --test` — clean
+- `./vendor/bin/pest` — 90 tests, 351 assertions, all pass
+
 ### Batch 5: Polish (Tasks 14-16)
 
 **Task 14: Episode Notifications**

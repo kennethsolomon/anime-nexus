@@ -192,3 +192,35 @@ These enable or enhance everything that follows.
 - Stats dashboard: use a charting library (Chart.js/Recharts) or pure CSS/Tailwind bars?
 - Notifications: real-time (WebSocket) or polling on page load? (Polling simpler, sufficient for MVP)
 - Light theme: full redesign or just invert the dark palette? (CSS variables makes this mechanical)
+
+---
+
+## Feature: CheckNewEpisodes — Notification Trigger (2026-03-15)
+
+### Problem Statement
+
+The notification system (bell icon, dropdown, mark-as-read) is built but nothing populates the `episode_notifications` table. Users with anime in their "Watching" list should be notified when new episodes are available.
+
+### Chosen Approach: Queued Check on First Page Load Per Session
+
+**Trigger:** First authenticated page load of each session (not login-specific). Uses `session('notifications_checked')` flag to avoid repeat checks within the same session.
+
+**Mechanism:**
+1. Middleware checks `session('notifications_checked')` on authenticated requests
+2. If not set, dispatches `CheckNewEpisodes` job to the queue
+3. Sets session flag so it doesn't repeat
+4. Job runs in background — no page load blocking
+
+**Check Logic (in queued job):**
+1. Get user's "Watching" watchlist items (limit 10, most recently updated)
+2. For each item, fetch `totalEpisodes` from `ConsumetService::getAnimeInfo()` (uses 24h cache)
+3. Compare against `MAX(episode_number)` from `watch_histories` for that anime
+4. If `totalEpisodes > maxWatchedEpisode`, create an `EpisodeNotification`
+5. Skip if a notification already exists for the same anime (avoid duplicates)
+
+**Key Decisions:**
+1. Limit to 10 most recently updated "Watching" items — covers likely candidates without API spam
+2. Uses existing Consumet cache (24h) — no extra API calls if cache is warm
+3. Queued to background — no page load impact
+4. Dedup: won't create duplicate notifications for the same anime
+5. Works for both anime and drama content types
