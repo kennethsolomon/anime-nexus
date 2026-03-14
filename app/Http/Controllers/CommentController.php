@@ -11,9 +11,6 @@ use Illuminate\Http\Request;
 
 final class CommentController extends Controller
 {
-    /**
-     * @return JsonResponse
-     */
     public function index(Request $request): JsonResponse
     {
         $animeId = $request->string('anime_id')->toString();

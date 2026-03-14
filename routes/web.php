@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AnimeController;
-use App\Http\Controllers\DramaController;
-use App\Http\Controllers\DramaStreamController;
-use App\Http\Controllers\HistoryController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DramaController;
+use App\Http\Controllers\DramaStreamController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\StreamController;
 use App\Http\Controllers\WatchlistController;
 use Illuminate\Support\Facades\Route;
 
