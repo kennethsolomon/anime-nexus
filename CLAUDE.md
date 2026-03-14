@@ -3,22 +3,104 @@
 
 > Stack: **Inertia + React (TypeScript)** | PHP 8.4+ | Laravel 12 | Pest
 
-## Workflow
+## Workflow — Follow This Order
+<!-- LOCK -->
 
-Follow these steps in order. Never skip or auto-advance.
+**Flow:** Read → Explore → Design → Plan → Branch → Implement → Lint → Test → Security → Review → Finish
 
-```
-1. /laravel-init      <- bootstrap (already done)
-2. /brainstorm        <- clarify design, no coding yet
-3. /write-plan        <- decision-complete plan -> tasks/todo.md
-4. /execute-plan      <- implement in batches, log to tasks/progress.md
-5. /laravel-lint      <- pint + phpstan + rector (must be clean before continuing)
-6. /laravel-test      <- pest coverage (must pass)
-7. /security-check    <- OWASP + Laravel security audit
-8. /review            <- self-review, report only
-9. /smart-commit      <- conventional commit
-10. /finish-feature   <- changelog + PR
-```
+Progress is tracked in `tasks/workflow-status.md`. This file persists across conversations.
+
+| # | Step | Command | Type | Loop? |
+|---|------|---------|------|-------|
+| 1 | Read Todo | read `tasks/todo.md` | required | no |
+| 2 | Read Lessons | read `tasks/lessons.md` | required | no |
+| 3 | Explore | `/brainstorm` | required | no |
+| 4 | Design | `/frontend-design` | optional (confirm to skip) | no |
+| 5 | Plan | outline in `tasks/progress.md` | required | no |
+| 6 | Branch | create feature branch | required | no |
+| 7 | Migrate | `/schema-migrate` | optional (confirm to skip) | no |
+| 8 | Implement | write the code | required | no |
+| 9 | Commit | `/smart-commit` | required | no |
+| 10 | Lint | `/laravel-lint` | required | yes — must be clean |
+| 11 | Commit | `/smart-commit` | conditional (skip if lint was clean) | no |
+| 12 | Test | `/laravel-test` | required | yes — must pass |
+| 13 | Commit | `/smart-commit` | conditional (skip if no test fixes) | no |
+| 14 | Debug | `/debug` | optional (confirm to skip) | no |
+| 15 | Security | `/security-check` | required | yes — must reach 0 issues |
+| 16 | Commit | `/smart-commit` | conditional (skip if security was clean) | no |
+| 17 | Review | `/review` | required | yes — must reach 0 issues |
+| 18 | Commit | `/smart-commit` | conditional (skip if review was clean) | no |
+| 19 | Update | mark done in `tasks/todo.md`, log in `tasks/progress.md` | required | no |
+| 20 | Finalize | `/finish-feature` | required | no |
+| 21 | Release | `/release` | optional (confirm to skip) | no |
+
+### Step Details
+
+1.  **Read** `tasks/todo.md` — pick the next incomplete task
+2.  **Read** `tasks/lessons.md` — review past corrections before writing code
+3.  **Explore** — run `/brainstorm` to clarify requirements, constraints, and approach. No code in this step.
+4.  **Design** — run `/frontend-design` for UI mockup. No code — design only. Skip if backend-only.
+5.  **Plan** — outline approach in `tasks/progress.md` using brainstorm + design outputs. No code in this step.
+6.  **Branch** — create a feature branch to isolate work from main
+7.  **Migrate** — run `/schema-migrate` for database changes. Skip if no schema changes needed.
+8.  **Implement** — write the code
+9.  **Commit** — run `/smart-commit` to commit implementation
+10. **Lint** — run `/laravel-lint` (Pint → PHPStan → Rector). Fix all issues immediately, then re-run until clean. Do not ask to re-run — fix and re-run automatically.
+11. **Commit** — run `/smart-commit` if lint required fixes. Auto-skip if lint was clean.
+12. **Test** — run `/laravel-test`. Fix any failures immediately, then re-run until all pass. Do not ask to re-run — fix and re-run automatically.
+13. **Commit** — run `/smart-commit` if tests required fixes. Auto-skip if tests passed first try.
+14. **Debug** — run `/debug` for structured investigation. Skip if no issues found.
+15. **Security** — run `/security-check`. Must reach 0 issues across all severities. Fix issues immediately, commit, then re-run. Loop until clean.
+16. **Commit** — run `/smart-commit` if security required fixes. Auto-skip if clean.
+17. **Review** — run `/review`. Must reach 0 issues including nitpicks. Fix issues immediately, commit, then re-run. Loop until clean.
+18. **Commit** — run `/smart-commit` if review required fixes. Auto-skip if clean.
+19. **Update** — mark task done in `tasks/todo.md`, log progress in `tasks/progress.md`
+20. **Finalize** — run `/finish-feature` for changelog + PR
+21. **Release** — run `/release` if deploying. Skip if not ready.
+
+### Workflow Tracker Rules
+
+**These rules are mandatory for every step:**
+
+1. **Read tracker first.** At the start of every step, read `tasks/workflow-status.md` to verify the current step. If the step being run does not match the `>> next <<` step, STOP and ask the user to confirm skipping the intervening steps.
+
+2. **Update tracker after.** At the end of every step, update `tasks/workflow-status.md`:
+   - Set the current step's Status to `done`, `skipped`, or `partial`
+   - Add relevant Notes (e.g., "clean on attempt 2", "backend-only, no UI")
+   - Move `>> next <<` to the next pending step
+
+3. **Optional steps** (4, 7, 14, 21): Ask the user "Skip [step]?" and require explicit confirmation. Record the reason in Notes.
+
+4. **Conditional commits** (11, 13, 16, 18): Auto-skip if no changes were made. Record reason (e.g., "lint was clean", "tests passed first try").
+
+5. **Loop steps** (10, 12, 15, 17): Fix issues immediately and re-run. Do NOT ask the user to re-run — fix and re-run automatically. Track attempt number in Notes (e.g., "clean on attempt 3").
+
+6. **Never skip steps without confirmation.** Steps cannot run out of order.
+
+7. **Never auto-advance.** When one step completes, stop and tell the user which step is next. Do not proceed automatically.
+
+8. **Never write code during design or plan phases.** Steps 1-5 are reading/exploring/planning/design only — no code, no file edits (except `tasks/` files).
+
+### Tracker Reset
+
+- When starting a new task, check if `tasks/workflow-status.md` has any `done` or `skipped` steps. If yes, ask: "Existing workflow detected. Start fresh and reset tracker?"
+- Reset sets all steps to `not yet` and marks step 1 as `>> next <<`.
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/brainstorm` | Explore requirements and design |
+| `/laravel-lint` | Run Pint + PHPStan + Rector |
+| `/laravel-test` | Run Pest with coverage |
+| `/security-check` | OWASP security audit on changed files |
+| `/frontend-design` | UI mockup before implementation |
+| `/schema-migrate` | Database migration analysis |
+| `/debug` | Structured bug investigation |
+| `/review` | Self-review of branch changes |
+| `/smart-commit` | Conventional commit with approval |
+| `/finish-feature` | Changelog + PR creation |
+| `/release` | Version bump + changelog + tag |
 
 ## Project Memory
 
