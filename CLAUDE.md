@@ -3,6 +3,29 @@
 
 > Stack: **Inertia + React (TypeScript)** | PHP 8.4+ | Laravel 12 | Pest
 
+## Project Context
+<!-- AUTO-GENERATED — do not edit manually -->
+
+**Anime Nexus** — full-stack anime and drama streaming app. Browse trending content, search, stream episodes (HLS via ArtPlayer for anime, iframe embeds for drama), track watch progress, manage watchlists.
+
+- **External API**: [Consumet API](https://github.com/consumet/api.consumet.org) (self-hosted via Docker — `docker compose up -d`)
+- **Database**: SQLite (`database/database.sqlite`)
+- **Models**: `User`, `WatchHistory`, `Watchlist`
+- **Services**: `ConsumetService` — all external API calls with response caching (24h metadata, 6h episodes, 30m streams), stale cache fallback, automatic provider rotation on failure
+- **Content types**: Anime (multi-provider: animekai, hianime, gogoanime) and Drama (TMDB ID mapping, vidsrc.cc embeds)
+
+### Key Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CONSUMET_API_URL` | Self-hosted Consumet API URL | `http://localhost:3000` |
+| `DB_CONNECTION` | Database driver | `sqlite` |
+
+### Known Limitations
+
+- Drama streaming: FlixHQ/Goku endpoints intermittently blocked by Cloudflare. Iframe embeds via vidsrc.cc used as fallback.
+- Free embed providers include ads — recommend uBlock Origin.
+
 ## Workflow — Follow This Order
 <!-- LOCK -->
 
@@ -136,31 +159,33 @@ All business logic lives in `app/Actions/`. One class per operation.
 
 ```
 app/Actions/
-├── Auth/
-├── Anime/
-├── Watchlist/
-└── History/
+├── Anime/     # GetTrending, SearchAnime, GetAnimeDetail, GetStreamingLinks
+├── Drama/     # GetDramaTrending, SearchDrama, GetDramaDetail, GetDramaStreamingLinks
+├── History/   # GetWatchHistory, SaveWatchProgress
+└── Watchlist/ # AddToWatchlist, UpdateWatchlistStatus, RemoveFromWatchlist
 ```
 
 - Single `handle()` method, injected constructor dependencies
 - `final` classes
 - Controllers call actions — never put logic in controllers
 
-### Directory Structure
+### Directory Structure (Actual)
 ```
 app/
-├── Actions/          <- business logic (required)
-├── Console/Commands/ <- artisan commands (auto-registered)
-├── DTOs/             <- data transfer objects (optional)
-├── Exceptions/       <- custom exceptions
+├── Actions/     <- business logic (required)
 ├── Http/
 │   ├── Controllers/  <- thin, call actions only
-│   ├── Middleware/   <- registered in bootstrap/app.php (Laravel 12)
+│   ├── Middleware/    <- HandleInertiaRequests (registered in bootstrap/app.php)
 │   └── Requests/     <- Form Requests (validation always here)
-├── Models/           <- Eloquent models
-├── Policies/         <- authorization policies
-├── Services/         <- external service wrappers (e.g. ConsumetService)
-└── Providers/        <- service providers
+├── Models/      <- User, WatchHistory, Watchlist
+├── Services/    <- ConsumetService (external API wrapper)
+└── Providers/   <- AppServiceProvider
+
+resources/js/
+├── Components/  <- AnimeCard, VideoPlayer, EpisodeList, ContentTypeSwitcher, etc.
+├── Layouts/     <- AuthenticatedLayout, GuestLayout
+├── Pages/       <- Home, Search, AnimeDetail, Watch, DramaHome, DramaDetail, etc.
+└── types/       <- anime.d.ts, global.d.ts, index.d.ts
 ```
 
 ## PHP Rules
@@ -206,9 +231,11 @@ app/
 - TypeScript strict mode — no `any` types
 - Use `useForm` helper for all forms
 - Inertia v2 features: deferred props, prefetching, polling
-- Shared components in `resources/js/components/`
-- Pages in `resources/js/pages/`
-- Layouts in `resources/js/layouts/`
+- Shared components in `resources/js/Components/`
+- Pages in `resources/js/Pages/`
+- Layouts in `resources/js/Layouts/`
+- Video: ArtPlayer + hls.js (anime HLS streams), iframe embeds (drama)
+- Key deps: `artplayer`, `hls.js`, `dompurify`, `@headlessui/react`
 
 ## Code Quality Gates
 
@@ -229,6 +256,34 @@ Or use: `/laravel-lint`
 - Signed URLs for temporary access
 - Rate limiting on all public endpoints
 - Never trust user-supplied IDs without authorization check
+
+## Development Scripts
+<!-- AUTO-GENERATED — do not edit manually -->
+
+```bash
+composer run setup    # Full setup: install, env, key, migrate, npm install+build
+composer run dev      # Start server + queue + pail + vite concurrently
+composer run test     # Clear config + run pest
+npm run dev           # Vite dev server only
+npm run build         # tsc + vite build
+```
+
+### CI Pipeline (`.github/workflows/ci.yml`)
+
+Two jobs on push/PR to main:
+- **PHP 8.4**: Composer install → Pint --test → PHPStan → Rector --dry-run → Pest
+- **Frontend**: npm ci → tsc --noEmit → npm run build
+
+## Documentation
+<!-- AUTO-GENERATED — do not edit manually -->
+
+| File | Purpose |
+|------|---------|
+| `README.md` | Setup, architecture, routes, environment vars |
+| `CONTRIBUTING.md` | Code standards, commit format, PR guidelines |
+| `.github/workflows/ci.yml` | CI pipeline definition |
+| `.github/pull_request_template.md` | PR template |
+| `.github/ISSUE_TEMPLATE/` | Bug report + feature request templates |
 
 ## 3-Strike Protocol
 
