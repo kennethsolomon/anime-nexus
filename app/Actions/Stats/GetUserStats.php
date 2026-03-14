@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Stats;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 final class GetUserStats
@@ -14,17 +15,35 @@ final class GetUserStats
      */
     public function handle(User $user): array
     {
-        $histories = $user->watchHistories();
+        return Cache::remember(
+            "user_stats:{$user->id}",
+            300, // 5 minutes
+            fn (): array => $this->compute($user),
+        );
+    }
 
-        $totalEpisodes = (int) $histories->where('completed', true)->count();
-        $totalSeconds = (int) $histories->sum('progress_seconds');
+    /**
+     * @return array<string, mixed>
+     */
+    private function compute(User $user): array
+    {
+        // Single aggregate query for basic stats
+        $aggregates = DB::table('watch_histories')
+            ->where('user_id', $user->id)
+            ->selectRaw('COUNT(CASE WHEN completed = 1 THEN 1 END) as total_episodes')
+            ->selectRaw('COALESCE(SUM(progress_seconds), 0) as total_seconds')
+            ->selectRaw('COUNT(DISTINCT anime_id) as unique_anime')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN completed = 1 THEN anime_id END) as completed_anime')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN content_type = \'anime\' THEN anime_id END) as anime_count')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN content_type = \'drama\' THEN anime_id END) as drama_count')
+            ->first();
 
-        $uniqueAnime = (int) $histories->distinct('anime_id')->count('anime_id');
-        $completedAnime = (int) $histories->clone()
-            ->select('anime_id')
-            ->where('completed', true)
-            ->distinct()
-            ->count('anime_id');
+        $totalEpisodes = (int) ($aggregates?->total_episodes ?? 0);
+        $totalSeconds = (int) ($aggregates?->total_seconds ?? 0);
+        $uniqueAnime = (int) ($aggregates?->unique_anime ?? 0);
+        $completedAnime = (int) ($aggregates?->completed_anime ?? 0);
+        $animeCount = (int) ($aggregates?->anime_count ?? 0);
+        $dramaCount = (int) ($aggregates?->drama_count ?? 0);
 
         $completionRate = $uniqueAnime > 0 ? round(($completedAnime / $uniqueAnime) * 100, 1) : 0;
 
@@ -47,8 +66,9 @@ final class GetUserStats
 
         // Current streak (consecutive days with activity)
         $streak = 0;
-        $activityDays = $user->watchHistories()
-            ->select(DB::raw('DATE(watched_at) as day'))
+        $activityDays = DB::table('watch_histories')
+            ->where('user_id', $user->id)
+            ->selectRaw('DATE(watched_at) as day')
             ->distinct()
             ->orderByDesc('day')
             ->pluck('day')
@@ -58,7 +78,6 @@ final class GetUserStats
             $today = now()->format('Y-m-d');
             $yesterday = now()->subDay()->format('Y-m-d');
 
-            // Streak starts from today or yesterday
             if ($activityDays[0] === $today || $activityDays[0] === $yesterday) {
                 $streak = 1;
                 $counter = count($activityDays);
@@ -72,9 +91,6 @@ final class GetUserStats
                 }
             }
         }
-
-        $animeCount = (int) $user->watchHistories()->where('content_type', 'anime')->distinct('anime_id')->count('anime_id');
-        $dramaCount = (int) $user->watchHistories()->where('content_type', 'drama')->distinct('anime_id')->count('anime_id');
 
         return [
             'totalEpisodes' => $totalEpisodes,

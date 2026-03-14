@@ -106,7 +106,9 @@ export default function CommentSection({ animeId, episodeId, contentType }: Comm
         })
             .then((res) => res.json())
             .then(setComments)
-            .catch(() => {});
+            .catch(() => {
+                // Initial load failure is non-critical — comments section stays empty
+            });
     }, [animeId, episodeId, auth?.user]);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -136,7 +138,7 @@ export default function CommentSection({ animeId, episodeId, contentType }: Comm
                     })
                         .then((res) => res.json())
                         .then(setComments)
-                        .catch(() => {});
+                        .catch(() => toast.info('Comment posted but failed to refresh list'));
                 },
                 onError: () => {
                     toast.error('Failed to post comment');

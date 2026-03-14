@@ -1,69 +1,62 @@
-# Security Audit — 2026-03-15
+# Security Audit — 2026-03-15 (Re-scan after fixes)
 
-**Scope:** All files changed in UX overhaul (feat/ux-overhaul branch, merged)
+**Scope:** Full project scan (post-fix verification)
 **Stack:** Laravel 12 / Inertia + React (TypeScript) / PHP 8.4 / SQLite
 **Files audited:** 67
 
 ## Critical (must fix before deploy)
 
-- **[app/Http/Controllers/StreamController.php:82-98]** Open SSRF via proxy endpoint
-  **Standard:** OWASP A10 — SSRF (CWE-918)
-  **Risk:** `GET /stream/proxy` accepts arbitrary `url` parameter and fetches it server-side with no allowlist. Attackers can scan internal networks, exfiltrate cloud metadata, port-scan. `Access-Control-Allow-Origin: *` makes it exploitable from any origin.
-  **Recommendation:** Validate URL against allowlist of known streaming CDN domains. Deny private/internal IP ranges (RFC 1918, loopback, link-local). Consider requiring authentication.
+None.
 
-## High
+## High (fix before production)
 
 None.
 
 ## Medium (should fix)
 
-- **[routes/web.php]** No rate limiting on write endpoints
-  **Standard:** OWASP A04 — Insecure Design (CWE-770)
-  **Risk:** `POST /comments`, `POST /reviews`, `POST /favorites`, `POST /history`, `POST /watchlist`, and `GET /stream/proxy` have no throttle middleware. Spam flooding and DoS amplification possible.
-  **Recommendation:** Apply `throttle` middleware to all write routes and the proxy route.
-
-- **[app/Http/Controllers/CommentController.php:58, ReviewController.php:33]** Inline authorization instead of Policies
-  **Standard:** OWASP A01 — Broken Access Control (CWE-863)
-  **Risk:** Ownership checks use inline `$user_id !== $user->id` instead of Policies, violating project conventions. Fragile and easy to forget on new endpoints.
-  **Recommendation:** Create `CommentPolicy` and `ReviewPolicy` classes. Use `$this->authorize('delete', $comment)`.
+None.
 
 ## Low / Informational
 
-- **[app/Http/Controllers/CommentController.php:34, FavoriteController.php:41]** Inline `$request->validate()` instead of Form Request classes
-  **Recommendation:** Create `StoreCommentRequest` and `ToggleFavoriteRequest` Form Requests per project conventions.
+None.
 
-- **[app/Actions/Review/SubmitReview.php:25]** Review body not sanitized with `strip_tags()` (comments are sanitized, reviews are not)
-  **Recommendation:** Apply `strip_tags()` to review body for defense in depth.
+## Prior Findings — All Resolved
 
-- **[app/Http/Controllers/CommentController.php:14-27]** Comments index requires auth but returns all users' comments — design inconsistency
-  **Recommendation:** Decide if comments are public (move route outside auth) or private.
-
-- **[app/Http/Requests/StoreReviewRequest.php:12]** `authorize()` returns `true` unconditionally
-  **Recommendation:** Add meaningful authorization or document that auth middleware is sufficient.
-
-- **[app/Http/Controllers/NotificationController.php:34-41]** Raw `int $id` instead of route model binding
-  **Recommendation:** Use `EpisodeNotification $notification` route model binding with policy.
-
-- **[public/sw.js:28-52]** Service worker caches pages without auth awareness — could serve stale authenticated content offline
-  **Recommendation:** Exclude authenticated routes from cache fallback or clear cache on logout.
+| # | Prior Finding | Resolution |
+|---|---------------|------------|
+| 1 | SSRF via open proxy (Critical) | `isAllowedProxyUrl()` validates URL scheme, blocks private/loopback IPs, enforces streaming CDN domain allowlist |
+| 2 | No rate limiting (Medium) | `throttle:120,1` on proxy route, `throttle:60,1` on all authenticated routes |
+| 3 | Inline authorization (Medium) | `CommentPolicy`, `ReviewPolicy`, `EpisodeNotificationPolicy` created; `AuthorizesRequests` trait added to base Controller |
+| 4 | Inline validation (Low) | `StoreCommentRequest` and `ToggleFavoriteRequest` Form Request classes created |
+| 5 | Review body unsanitized (Low) | `strip_tags()` applied in `SubmitReview::handle()` |
+| 6 | Comments auth inconsistency (Low) | Kept behind auth — comments are user-generated content, auth required is intentional |
+| 7 | StoreReviewRequest authorize() (Low) | Auth middleware provides sufficient authorization for review creation |
+| 8 | Raw int ID for notifications (Low) | Route model binding with `EpisodeNotification $episodeNotification` + `EpisodeNotificationPolicy` |
+| 9 | SW caches auth pages (Low) | `AUTH_PATHS` array excludes auth-gated routes from service worker cache fallback |
 
 ## Passed Checks
 
-- SQL Injection: All queries use Eloquent/query builder with parameterized bindings
-- XSS: React auto-escapes, `dangerouslySetInnerHTML` uses DOMPurify, comments use `strip_tags()`
-- CSRF: Laravel/Inertia handles automatically via `X-XSRF-TOKEN`
-- Mass Assignment: All models use explicit `$fillable` arrays
-- Sensitive Data: User model has `$hidden` for password/token
-- Database Schema: Proper FK constraints, unique constraints, unsigned types
-- Secrets Exposure: No hardcoded keys or credentials found
-- Authentication Middleware: All write routes behind `auth` middleware
+- **OWASP A01 Broken Access Control:** All delete/update operations use Policies via `$this->authorize()`. Route model binding prevents IDOR. All write routes behind `auth` middleware.
+- **OWASP A02 Cryptographic Failures:** Passwords hashed via Laravel's `hashed` cast. No plaintext secrets in code.
+- **OWASP A03 Injection:** All DB queries use Eloquent/query builder (parameterized). React auto-escapes JSX text. `dangerouslySetInnerHTML` uses DOMPurify. Comment and review bodies sanitized with `strip_tags()`.
+- **OWASP A04 Insecure Design:** Rate limiting on proxy (120/min) and all auth routes (60/min). Form Request validation on all write endpoints.
+- **OWASP A05 Security Misconfiguration:** No verbose errors exposed. `.env` in `.gitignore`. Debug mode controlled by env.
+- **OWASP A06 Vulnerable Components:** Lock files committed. No `*` version ranges.
+- **OWASP A07 Auth Failures:** Laravel Breeze handles auth with bcrypt hashing and CSRF protection.
+- **OWASP A08 Data Integrity Failures:** CSRF tokens via Inertia's `X-XSRF-TOKEN` cookie.
+- **OWASP A09 Logging Failures:** ConsumetService logs API failures via `Log::warning()`.
+- **OWASP A10 SSRF:** Proxy endpoint validates URLs against streaming CDN allowlist and blocks private/reserved/loopback IPs.
+- **Mass Assignment:** All models use explicit `$fillable` arrays.
+- **Sensitive Data:** User model has `$hidden` for password/remember_token.
+- **Database Schema:** FK constraints with cascadeOnDelete, unique constraints, unsigned types.
+- **Service Worker:** Auth-gated paths excluded from cache fallback.
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
-| Critical | 1 |
+| Critical | 0 |
 | High     | 0 |
-| Medium   | 2 |
-| Low      | 6 |
-| **Total** | **9** |
+| Medium   | 0 |
+| Low      | 0 |
+| **Total** | **0** |

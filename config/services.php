@@ -41,4 +41,27 @@ return [
         'url' => env('CONSUMET_API_URL', 'http://localhost:3000'),
     ],
 
+    'streaming' => [
+        'allowed_domains' => [
+            '.biananset.net',
+            '.gogoanime.',
+            '.gogocdn.',
+            '.anitaku.',
+            '.animekai.',
+            '.hianime.',
+            '.consumet.',
+            '.megacloud.',
+            '.rapid-cloud.',
+            '.rabbitstream.',
+            '.vidcloud.',
+            '.vidstreaming.',
+            '.mcloud.',
+            '.mp4upload.',
+            '.streamtape.',
+            '.doodstream.',
+            '.filemoon.',
+            '.m3u8',
+        ],
+    ],
+
 ];

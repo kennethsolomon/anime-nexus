@@ -89,7 +89,8 @@ final class StreamController extends Controller
         }
 
         // SSRF protection: only allow proxying known streaming domains
-        if (! $this->isAllowedProxyUrl($url)) {
+        $resolvedIp = $this->isAllowedProxyUrl($url);
+        if ($resolvedIp === false) {
             abort(403, 'URL not allowed');
         }
 
@@ -98,7 +99,12 @@ final class StreamController extends Controller
             $headers['Referer'] = $referer;
         }
 
+        // Pin DNS resolution to prevent rebinding attacks
+        $parsed = parse_url($url);
+        $host = $parsed['host'] ?? '';
+
         $response = Http::withHeaders($headers)
+            ->withOptions($resolvedIp !== true ? ['curl' => [CURLOPT_RESOLVE => ["{$host}:443:{$resolvedIp}", "{$host}:80:{$resolvedIp}"]]] : [])
             ->timeout(30)
             ->get($url);
 
@@ -121,7 +127,10 @@ final class StreamController extends Controller
         ]);
     }
 
-    private function isAllowedProxyUrl(string $url): bool
+    /**
+     * @return string|true|false Resolved IP on success, true if no DNS resolution needed, false if blocked
+     */
+    private function isAllowedProxyUrl(string $url): string|bool
     {
         $parsed = parse_url($url);
         if ($parsed === false || ! isset($parsed['host'])) {
@@ -136,20 +145,19 @@ final class StreamController extends Controller
             return false;
         }
 
-        // Block private/internal IPs (loopback, private ranges, reserved ranges)
-        $ip = gethostbyname($host);
-        if ($ip !== $host) {
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+        // Resolve DNS once and validate IP (prevents DNS rebinding)
+        $resolvedIp = gethostbyname($host);
+        if ($resolvedIp !== $host) {
+            if (filter_var($resolvedIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
                 return false;
             }
-            // Also block loopback (127.x.x.x)
-            if (str_starts_with($ip, '127.') || $ip === '::1') {
+            if (str_starts_with($resolvedIp, '127.') || $resolvedIp === '::1') {
                 return false;
             }
         }
 
         // Allowlist known streaming CDN domains
-        $allowedPatterns = [
+        $allowedPatterns = config('services.streaming.allowed_domains', [
             '.biananset.net',
             '.gogoanime.',
             '.gogocdn.',
@@ -168,11 +176,12 @@ final class StreamController extends Controller
             '.doodstream.',
             '.filemoon.',
             '.m3u8',
-        ];
+        ]);
 
         foreach ($allowedPatterns as $pattern) {
-            if (str_contains($host, $pattern) || str_ends_with($url, $pattern)) {
-                return true;
+            if (str_contains($host, (string) $pattern) || str_ends_with($url, (string) $pattern)) {
+                // Return resolved IP so caller can pin DNS
+                return $resolvedIp !== $host ? $resolvedIp : true;
             }
         }
 

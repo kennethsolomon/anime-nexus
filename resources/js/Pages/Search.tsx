@@ -62,6 +62,7 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
     const resultData = Array.isArray(results) ? null : results;
     const currentItems = resultData?.results || [];
     const hasNext = resultData?.hasNextPage || false;
+    const resultsKey = currentItems.map((i) => i.id).join(',');
 
     // Accumulate results: reset on new query, append on page change
     useEffect(() => {
@@ -80,7 +81,8 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
             });
         }
         setLoadingMore(false);
-    }, [currentItems, query, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [resultsKey, query, page]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();

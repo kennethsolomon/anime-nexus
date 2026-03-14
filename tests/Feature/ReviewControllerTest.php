@@ -61,6 +61,24 @@ it('updates an existing review', function (): void {
     ]);
 });
 
+it('sanitizes html tags from review body', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('reviews.store'), [
+            'anime_id' => 'xss-test',
+            'rating' => 5,
+            'body' => '<script>alert(1)</script>Great anime!',
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('reviews', [
+        'user_id' => $user->id,
+        'anime_id' => 'xss-test',
+        'body' => 'alert(1)Great anime!',
+    ]);
+});
+
 it('validates rating is required and between 1-5', function (): void {
     $user = User::factory()->create();
 

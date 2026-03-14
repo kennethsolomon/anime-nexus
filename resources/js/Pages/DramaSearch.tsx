@@ -61,6 +61,7 @@ function DramaSearchContent({ results, query, page }: DramaSearchProps) {
     const resultData = Array.isArray(results) ? null : results;
     const currentItems = resultData?.results || [];
     const hasNext = resultData?.hasNextPage || false;
+    const resultsKey = currentItems.map((i) => i.id).join(',');
 
     useEffect(() => {
         if (query !== prevQueryRef.current) {
@@ -76,7 +77,8 @@ function DramaSearchContent({ results, query, page }: DramaSearchProps) {
             });
         }
         setLoadingMore(false);
-    }, [currentItems, query, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [resultsKey, query, page]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
