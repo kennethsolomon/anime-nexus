@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ToggleFavoriteRequest;
 use App\Models\Favorite;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,17 +34,12 @@ final class FavoriteController extends Controller
         ]);
     }
 
-    public function toggle(Request $request): RedirectResponse
+    public function toggle(ToggleFavoriteRequest $request): RedirectResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $validated = $request->validate([
-            'anime_id' => ['required', 'string', 'max:255'],
-            'anime_title' => ['required', 'string', 'max:255'],
-            'anime_image' => ['nullable', 'url', 'max:2048'],
-            'content_type' => ['sometimes', 'string', 'in:anime,drama'],
-        ]);
+        $validated = $request->validated();
 
         $existing = $user->favorites()
             ->where('anime_id', $validated['anime_id'])

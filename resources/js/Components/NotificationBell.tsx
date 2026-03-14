@@ -53,7 +53,7 @@ export default function NotificationBell() {
 
     const handleClick = (notif: Notification) => {
         // Mark as read
-        router.patch(route('notifications.read', { id: notif.id }), {}, { preserveScroll: true });
+        router.patch(route('notifications.read', { episodeNotification: notif.id }), {}, { preserveScroll: true });
         setNotifications((prev) =>
             prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)),
         );

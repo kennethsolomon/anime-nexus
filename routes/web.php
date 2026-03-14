@@ -22,7 +22,7 @@ Route::get('/search', [AnimeController::class, 'search'])->name('anime.search');
 Route::get('/genre/{genre}', [AnimeController::class, 'genre'])->name('anime.genre');
 Route::get('/anime/{id}', [AnimeController::class, 'show'])->name('anime.show');
 Route::get('/anime/{id}/watch', [StreamController::class, 'show'])->name('anime.watch');
-Route::get('/stream/proxy', [StreamController::class, 'proxy'])->name('stream.proxy');
+Route::get('/stream/proxy', [StreamController::class, 'proxy'])->middleware('throttle:120,1')->name('stream.proxy');
 
 // Drama routes
 Route::get('/drama', [DramaController::class, 'index'])->name('drama.home');
@@ -31,7 +31,7 @@ Route::get('/drama/{id}/watch', [DramaStreamController::class, 'show'])->where('
 Route::get('/drama/{id}', [DramaController::class, 'show'])->where('id', '.*')->name('drama.show');
 
 // Authenticated routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'throttle:60,1'])->group(function () {
     // Watchlist
     Route::get('/watchlist', [WatchlistController::class, 'index'])->name('watchlist.index');
     Route::post('/watchlist', [WatchlistController::class, 'store'])->name('watchlist.store');
@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::patch('/notifications/{episodeNotification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
 
     // Dashboard

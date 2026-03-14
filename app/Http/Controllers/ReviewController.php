@@ -27,12 +27,7 @@ final class ReviewController extends Controller
 
     public function destroy(Request $request, Review $review): RedirectResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        if ($review->user_id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $review);
 
         $review->delete();
 

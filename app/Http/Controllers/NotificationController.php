@@ -31,14 +31,11 @@ final class NotificationController extends Controller
         ]);
     }
 
-    public function markRead(Request $request, int $id): RedirectResponse
+    public function markRead(Request $request, EpisodeNotification $episodeNotification): RedirectResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
+        $this->authorize('update', $episodeNotification);
 
-        EpisodeNotification::where('id', $id)
-            ->where('user_id', $user->id)
-            ->update(['read' => true]);
+        $episodeNotification->update(['read' => true]);
 
         return back();
     }

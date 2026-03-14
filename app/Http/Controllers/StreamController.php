@@ -88,6 +88,11 @@ final class StreamController extends Controller
             abort(400);
         }
 
+        // SSRF protection: only allow proxying known streaming domains
+        if (! $this->isAllowedProxyUrl($url)) {
+            abort(403, 'URL not allowed');
+        }
+
         $headers = ['Accept' => '*/*'];
         if ($referer !== '') {
             $headers['Referer'] = $referer;
@@ -114,6 +119,64 @@ final class StreamController extends Controller
             'Content-Type' => $contentType,
             'Access-Control-Allow-Origin' => '*',
         ]);
+    }
+
+    private function isAllowedProxyUrl(string $url): bool
+    {
+        $parsed = parse_url($url);
+        if ($parsed === false || ! isset($parsed['host'])) {
+            return false;
+        }
+
+        $host = strtolower($parsed['host']);
+        $scheme = strtolower($parsed['scheme'] ?? '');
+
+        // Block non-HTTP schemes
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        // Block private/internal IPs (loopback, private ranges, reserved ranges)
+        $ip = gethostbyname($host);
+        if ($ip !== $host) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                return false;
+            }
+            // Also block loopback (127.x.x.x)
+            if (str_starts_with($ip, '127.') || $ip === '::1') {
+                return false;
+            }
+        }
+
+        // Allowlist known streaming CDN domains
+        $allowedPatterns = [
+            '.biananset.net',
+            '.gogoanime.',
+            '.gogocdn.',
+            '.anitaku.',
+            '.animekai.',
+            '.hianime.',
+            '.consumet.',
+            '.megacloud.',
+            '.rapid-cloud.',
+            '.rabbitstream.',
+            '.vidcloud.',
+            '.vidstreaming.',
+            '.mcloud.',
+            '.mp4upload.',
+            '.streamtape.',
+            '.doodstream.',
+            '.filemoon.',
+            '.m3u8',
+        ];
+
+        foreach ($allowedPatterns as $pattern) {
+            if (str_contains($host, $pattern) || str_ends_with($url, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function rewriteManifest(string $manifest, string $manifestUrl, string $referer): string

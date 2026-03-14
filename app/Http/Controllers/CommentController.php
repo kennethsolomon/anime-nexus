@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCommentRequest;
 use App\Models\Comment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,21 +27,14 @@ final class CommentController extends Controller
         return response()->json($comments);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreCommentRequest $request): RedirectResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $validated = $request->validate([
-            'anime_id' => ['required', 'string', 'max:255'],
-            'episode_id' => ['required', 'string', 'max:255'],
-            'content_type' => ['sometimes', 'string', 'in:anime,drama'],
-            'body' => ['required', 'string', 'max:2000'],
-            'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
-        ]);
-
-        // Strip HTML tags for XSS prevention
-        $validated['body'] = strip_tags((string) $validated['body']);
+        /** @var array{anime_id: string, episode_id: string, content_type?: string, body: string, parent_id?: int|null} $validated */
+        $validated = $request->validated();
+        $validated['body'] = strip_tags($validated['body']);
 
         Comment::create([
             'user_id' => $user->id,
@@ -52,12 +46,7 @@ final class CommentController extends Controller
 
     public function destroy(Request $request, Comment $comment): RedirectResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        if ($comment->user_id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $comment);
 
         $comment->delete();
 
