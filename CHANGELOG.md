@@ -29,3 +29,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Refactored color palette to CSS custom properties for theme switching
 - Updated tailwind.config.js to use CSS variable references
 - Video player now properly destroys HLS instance on cleanup
+- Consolidated dashboard stats queries (6+ queries to 2) with 5-minute user cache
+- Search pagination uses stable dependency key to prevent redundant re-renders
+
+### Security
+- Stream proxy: URL allowlist + private IP blocking + DNS pinning via CURLOPT_RESOLVE
+- Rate limiting: 120/min on proxy, 60/min on all authenticated routes
+- Authorization policies for Comment, Review, and EpisodeNotification models
+- Form Requests for all write endpoints (StoreComment, ToggleFavorite, StoreReview)
+- XSS sanitization via strip_tags() on review and comment bodies
+- Service worker excludes auth-gated routes from cache fallback
