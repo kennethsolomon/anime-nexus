@@ -1,8 +1,12 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import CommentSection from '@/Components/CommentSection';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import EpisodeList from '@/Components/EpisodeList';
+import SkeletonPlayer from '@/Components/SkeletonPlayer';
+import { useToast } from '@/Components/ToastContext';
 import VideoPlayer from '@/Components/VideoPlayer';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import usePageLoading from '@/hooks/usePageLoading';
 import { DramaInfo, StreamingResponse } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
@@ -52,6 +56,12 @@ function GuestNav() {
 
 function DramaWatchContent({ drama, streaming, episodeId, mediaId, embedUrl, progress }: DramaWatchProps) {
     const { auth } = usePage().props as { auth?: { user?: { id: number } } };
+    const toast = useToast();
+    const loading = usePageLoading();
+
+    if (loading) {
+        return <SkeletonPlayer />;
+    }
 
     const source =
         streaming.sources?.find((s) => s.quality === 'default' || s.quality === 'auto') ||
@@ -100,7 +110,11 @@ function DramaWatchContent({ drama, streaming, episodeId, mediaId, embedUrl, pro
                     completed: true,
                     content_type: 'drama',
                 },
-                { preserveScroll: true, preserveState: true },
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    onSuccess: () => toast.success(`Episode ${currentEpisode.number} completed`),
+                },
             );
         }
         if (nextEpisode) {
@@ -108,7 +122,7 @@ function DramaWatchContent({ drama, streaming, episodeId, mediaId, embedUrl, pro
                 route('drama.watch', { id: drama.id, episodeId: nextEpisode.id, mediaId }),
             );
         }
-    }, [auth, drama.id, drama.title, drama.image, episodeId, currentEpisode, nextEpisode, mediaId]);
+    }, [auth, drama.id, drama.title, drama.image, episodeId, currentEpisode, nextEpisode, mediaId, toast]);
 
     return (
         <>
@@ -190,6 +204,13 @@ function DramaWatchContent({ drama, streaming, episodeId, mediaId, embedUrl, pro
                                 {drama.title}
                             </Link>
                         </div>
+
+                        {/* Comments */}
+                        <CommentSection
+                            animeId={drama.id}
+                            episodeId={episodeId}
+                            contentType="drama"
+                        />
                     </div>
 
                     <div>

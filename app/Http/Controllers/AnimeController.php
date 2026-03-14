@@ -8,6 +8,7 @@ use App\Actions\Anime\GetAnimeDetail;
 use App\Actions\Anime\GetTrending;
 use App\Actions\Anime\SearchAnime;
 use App\Actions\History\GetWatchHistory;
+use App\Models\Review;
 use App\Services\ConsumetService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -72,9 +73,31 @@ final class AnimeController extends Controller
             $watchlistEntry = $user->watchlists()->where('anime_id', $id)->first();
         }
 
+        $reviews = Review::where('anime_id', $id)
+            ->where('content_type', 'anime')
+            ->with('user:id,name')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $userReview = null;
+        $isFavorited = false;
+        if ($request->user()) {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $userReview = $reviews->firstWhere('user_id', $user->id);
+            $isFavorited = $user->favorites()->where('anime_id', $id)->where('content_type', 'anime')->exists();
+        }
+
+        // Recommendations from API response or empty
+        $recommendations = $anime['recommendations'] ?? $anime['relations'] ?? [];
+
         return Inertia::render('AnimeDetail', [
             'anime' => $anime,
             'watchlistEntry' => $watchlistEntry,
+            'reviews' => $reviews,
+            'userReview' => $userReview,
+            'isFavorited' => $isFavorited,
+            'recommendations' => $recommendations,
         ]);
     }
 }

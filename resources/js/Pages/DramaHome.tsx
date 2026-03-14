@@ -1,7 +1,10 @@
 import AnimeCard from '@/Components/AnimeCard';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
+import HeroBanner from '@/Components/HeroBanner';
+import SkeletonGrid from '@/Components/SkeletonGrid';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import usePageLoading from '@/hooks/usePageLoading';
 import { DramaResult, DramaSearchResponse, WatchHistoryItem } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
@@ -78,11 +81,37 @@ function DramaGrid({ title, items }: { title: string; items: DramaResult[] }) {
 }
 
 function DramaHomeContent({ trending, continueWatching }: DramaHomeProps) {
+    const loading = usePageLoading();
+
+    if (loading) {
+        return (
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <div className="mb-4 h-7 w-40 animate-pulse rounded bg-input" />
+                <SkeletonGrid count={12} />
+            </div>
+        );
+    }
+
     return (
         <>
             <Head title="Drama" />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                {/* Hero Banner */}
+                {trending?.results?.length > 0 && (
+                    <HeroBanner
+                        slides={trending.results.slice(0, 5).map((drama) => ({
+                            id: drama.id,
+                            title: drama.title,
+                            image: drama.image,
+                            rating: drama.rating,
+                            type: drama.type,
+                            watchUrl: route('drama.show', { id: drama.id }),
+                            detailUrl: route('drama.show', { id: drama.id }),
+                        }))}
+                    />
+                )}
+
                 {continueWatching && continueWatching.length > 0 && (
                     <section className="mb-10">
                         <h2 className="mb-4 font-display text-xl font-bold text-primary">

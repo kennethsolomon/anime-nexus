@@ -8,6 +8,7 @@ use App\Actions\Drama\GetDramaDetail;
 use App\Actions\Drama\GetDramaTrending;
 use App\Actions\Drama\SearchDrama;
 use App\Actions\History\GetWatchHistory;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,9 +59,27 @@ final class DramaController extends Controller
             $watchlistEntry = $user->watchlists()->where('anime_id', $id)->first();
         }
 
+        $reviews = Review::where('anime_id', $id)
+            ->where('content_type', 'drama')
+            ->with('user:id,name')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $userReview = null;
+        $isFavorited = false;
+        if ($request->user()) {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $userReview = $reviews->firstWhere('user_id', $user->id);
+            $isFavorited = $user->favorites()->where('anime_id', $id)->where('content_type', 'drama')->exists();
+        }
+
         return Inertia::render('DramaDetail', [
             'drama' => $drama,
             'watchlistEntry' => $watchlistEntry,
+            'reviews' => $reviews,
+            'userReview' => $userReview,
+            'isFavorited' => $isFavorited,
         ]);
     }
 }
