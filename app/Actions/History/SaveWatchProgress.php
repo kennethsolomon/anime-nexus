@@ -6,6 +6,7 @@ namespace App\Actions\History;
 
 use App\Models\User;
 use App\Models\WatchHistory;
+use Illuminate\Support\Facades\Cache;
 
 final class SaveWatchProgress
 {
@@ -33,12 +34,16 @@ final class SaveWatchProgress
             $attributes['content_type'] = $data['content_type'];
         }
 
-        return $user->watchHistories()->updateOrCreate(
+        $history = $user->watchHistories()->updateOrCreate(
             [
                 'anime_id' => $data['anime_id'],
                 'episode_id' => $data['episode_id'],
             ],
             $attributes,
         );
+
+        Cache::forget("user_stats:{$user->id}");
+
+        return $history;
     }
 }
