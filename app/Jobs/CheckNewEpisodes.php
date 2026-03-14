@@ -67,9 +67,10 @@ final class CheckNewEpisodes implements ShouldQueue
         }
 
         // Get the max episode number the user has watched for this anime
-        $maxWatched = (int) $user->watchHistories()
+        /** @var int $maxWatched */
+        $maxWatched = $user->watchHistories()
             ->where('anime_id', $item->anime_id)
-            ->max('episode_number');
+            ->max('episode_number') ?? 0;
 
         if ($totalEpisodes <= $maxWatched) {
             return;

@@ -22,7 +22,7 @@ final class SubmitReview
             ],
             [
                 'rating' => $data['rating'],
-                'body' => isset($data['body']) ? strip_tags((string) $data['body']) : null,
+                'body' => isset($data['body']) ? strip_tags($data['body']) : null,
             ],
         );
     }

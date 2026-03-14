@@ -178,8 +178,11 @@ final class StreamController extends Controller
             '.m3u8',
         ]);
 
-        foreach ($allowedPatterns as $pattern) {
-            if (str_contains($host, (string) $pattern) || str_ends_with($url, (string) $pattern)) {
+        /** @var array<int, string> $patterns */
+        $patterns = is_array($allowedPatterns) ? $allowedPatterns : [];
+
+        foreach ($patterns as $pattern) {
+            if (str_contains($host, $pattern) || str_ends_with($url, $pattern)) {
                 // Return resolved IP so caller can pin DNS
                 return $resolvedIp !== $host ? $resolvedIp : true;
             }
