@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Models\EpisodeNotification;
 use App\Models\User;
+use App\Models\Watchlist;
 use App\Services\ConsumetService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -43,7 +44,7 @@ final class CheckNewEpisodes implements ShouldQueue
         }
     }
 
-    private function checkItem(ConsumetService $consumet, User $user, \App\Models\Watchlist $item): void
+    private function checkItem(ConsumetService $consumet, User $user, Watchlist $item): void
     {
         // Fetch info from Consumet (uses 24h cache)
         $info = $item->content_type === 'drama'
