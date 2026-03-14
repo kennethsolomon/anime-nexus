@@ -38,12 +38,12 @@ final class GetUserStats
             ->selectRaw('COUNT(DISTINCT CASE WHEN content_type = \'drama\' THEN anime_id END) as drama_count')
             ->first();
 
-        $totalEpisodes = (int) ($aggregates?->total_episodes ?? 0);
-        $totalSeconds = (int) ($aggregates?->total_seconds ?? 0);
-        $uniqueAnime = (int) ($aggregates?->unique_anime ?? 0);
-        $completedAnime = (int) ($aggregates?->completed_anime ?? 0);
-        $animeCount = (int) ($aggregates?->anime_count ?? 0);
-        $dramaCount = (int) ($aggregates?->drama_count ?? 0);
+        $totalEpisodes = (int) ($aggregates->total_episodes ?? 0);
+        $totalSeconds = (int) ($aggregates->total_seconds ?? 0);
+        $uniqueAnime = (int) ($aggregates->unique_anime ?? 0);
+        $completedAnime = (int) ($aggregates->completed_anime ?? 0);
+        $animeCount = (int) ($aggregates->anime_count ?? 0);
+        $dramaCount = (int) ($aggregates->drama_count ?? 0);
 
         $completionRate = $uniqueAnime > 0 ? round(($completedAnime / $uniqueAnime) * 100, 1) : 0;
 
