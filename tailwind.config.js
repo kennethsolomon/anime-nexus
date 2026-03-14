@@ -13,11 +13,11 @@ export default {
     theme: {
         extend: {
             colors: {
-                base: '#0D1117',
-                surface: '#161B22',
-                input: '#1C2333',
-                subtle: '#2A3040',
-                muted: '#3D4450',
+                base: 'var(--color-base)',
+                surface: 'var(--color-surface)',
+                input: 'var(--color-input)',
+                subtle: 'var(--color-subtle)',
+                muted: 'var(--color-muted)',
                 accent: {
                     DEFAULT: '#5DADE2',
                     hover: '#7EC8E3',
@@ -34,9 +34,9 @@ export default {
                 success: '#2EA043',
             },
             textColor: {
-                primary: '#E6EDF3',
-                'theme-secondary': '#8B949E',
-                'theme-muted': '#565E68',
+                primary: 'var(--color-text-primary)',
+                'theme-secondary': 'var(--color-text-secondary)',
+                'theme-muted': 'var(--color-text-muted)',
             },
             fontFamily: {
                 display: ['Lexend', ...defaultTheme.fontFamily.sans],

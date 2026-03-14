@@ -3,7 +3,31 @@
 @tailwind utilities;
 
 @layer base {
+    :root {
+        --color-base: #0D1117;
+        --color-surface: #161B22;
+        --color-input: #1C2333;
+        --color-subtle: #2A3040;
+        --color-muted: #3D4450;
+        --color-text-primary: #E6EDF3;
+        --color-text-secondary: #8B949E;
+        --color-text-muted: #565E68;
+    }
+
+    :root.light {
+        --color-base: #F8FAFC;
+        --color-surface: #FFFFFF;
+        --color-input: #F1F5F9;
+        --color-subtle: #E2E8F0;
+        --color-muted: #CBD5E1;
+        --color-text-primary: #1E293B;
+        --color-text-secondary: #64748B;
+        --color-text-muted: #94A3B8;
+    }
+
     body {
-        @apply bg-base text-primary;
+        background-color: var(--color-base);
+        color: var(--color-text-primary);
+        transition: background-color 150ms, color 150ms;
     }
 }

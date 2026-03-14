@@ -1,8 +1,15 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import EpisodeList from '@/Components/EpisodeList';
+import FavoriteButton from '@/Components/FavoriteButton';
+import RecommendationSection from '@/Components/RecommendationSection';
+import ReviewSection from '@/Components/ReviewSection';
+import ShareButton from '@/Components/ShareButton';
+import SkeletonDetail from '@/Components/SkeletonDetail';
+import { useToast } from '@/Components/ToastContext';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { AnimeInfo, WatchlistItem } from '@/types/anime';
+import usePageLoading from '@/hooks/usePageLoading';
+import { AnimeInfo, AnimeResult, ReviewItem, WatchlistItem } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
 import { useRef, useState } from 'react';
@@ -10,6 +17,10 @@ import { useRef, useState } from 'react';
 interface AnimeDetailProps {
     anime: AnimeInfo;
     watchlistEntry?: WatchlistItem | null;
+    reviews?: ReviewItem[];
+    userReview?: ReviewItem | null;
+    isFavorited?: boolean;
+    recommendations?: AnimeResult[];
 }
 
 function GuestNav() {
@@ -59,6 +70,7 @@ function WatchlistDropdown({
 }) {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const toast = useToast();
 
     const statuses = [
         { value: 'watching', label: 'Watching' },
@@ -68,19 +80,26 @@ function WatchlistDropdown({
     ];
 
     const handleSelect = (status: string) => {
+        const label = statuses.find((s) => s.value === status)?.label || status;
         router.post(route('watchlist.store'), {
             anime_id: animeId,
             anime_title: animeTitle,
             anime_image: animeImage,
             status,
             content_type: 'anime',
+        }, {
+            onSuccess: () => toast.success(`Marked as "${label}"`),
+            onError: () => toast.error('Failed to update watchlist'),
         });
         setOpen(false);
     };
 
     const handleRemove = () => {
         if (watchlistEntry) {
-            router.delete(route('watchlist.destroy', { watchlist: watchlistEntry.id }));
+            router.delete(route('watchlist.destroy', { watchlist: watchlistEntry.id }), {
+                onSuccess: () => toast.success('Removed from watchlist'),
+                onError: () => toast.error('Failed to remove from watchlist'),
+            });
         }
         setOpen(false);
     };
@@ -148,10 +167,15 @@ function WatchlistDropdown({
     );
 }
 
-function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
+function AnimeDetailContent({ anime, watchlistEntry, reviews = [], userReview, isFavorited = false, recommendations = [] }: AnimeDetailProps) {
     const { auth } = usePage().props as {
         auth?: { user?: { id: number } };
     };
+    const loading = usePageLoading();
+
+    if (loading) {
+        return <SkeletonDetail />;
+    }
 
     if (anime.error) {
         return (
@@ -270,13 +294,24 @@ function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
                                 </Link>
                             )}
                             {auth?.user && (
-                                <WatchlistDropdown
-                                    animeId={anime.id}
-                                    animeTitle={anime.title}
-                                    animeImage={anime.image}
-                                    watchlistEntry={watchlistEntry}
-                                />
+                                <>
+                                    <WatchlistDropdown
+                                        animeId={anime.id}
+                                        animeTitle={anime.title}
+                                        animeImage={anime.image}
+                                        watchlistEntry={watchlistEntry}
+                                    />
+                                    <FavoriteButton
+                                        animeId={anime.id}
+                                        animeTitle={anime.title}
+                                        animeImage={anime.image}
+                                        contentType="anime"
+                                        isFavorited={isFavorited}
+                                    />
+                                    <ShareButton title={anime.title} />
+                                </>
                             )}
+                            {!auth?.user && <ShareButton title={anime.title} />}
                         </div>
                     </div>
                 </div>
@@ -290,6 +325,17 @@ function AnimeDetailContent({ anime, watchlistEntry }: AnimeDetailProps) {
                         />
                     </div>
                 )}
+
+                {/* Recommendations */}
+                <RecommendationSection items={recommendations} contentType="anime" />
+
+                {/* Reviews */}
+                <ReviewSection
+                    animeId={anime.id}
+                    contentType="anime"
+                    reviews={reviews}
+                    userReview={userReview}
+                />
             </div>
         </>
     );

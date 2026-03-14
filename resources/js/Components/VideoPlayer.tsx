@@ -1,6 +1,6 @@
 import Artplayer from 'artplayer';
 import Hls from 'hls.js';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Subtitle {
     url: string;
@@ -27,6 +27,34 @@ function stripHtmlTags(text: string): string {
     return text.replace(/<[^>]*>/g, '');
 }
 
+function getPreferredQuality(): string {
+    try {
+        return localStorage.getItem('preferred-quality') || 'auto';
+    } catch {
+        return 'auto';
+    }
+}
+
+function savePreferredQuality(quality: string): void {
+    try {
+        localStorage.setItem('preferred-quality', quality);
+    } catch {
+        // localStorage unavailable
+    }
+}
+
+const SHORTCUTS = [
+    { key: 'Space / K', action: 'Play / Pause' },
+    { key: '\u2190', action: 'Seek -5s' },
+    { key: '\u2192', action: 'Seek +5s' },
+    { key: '\u2191', action: 'Volume up' },
+    { key: '\u2193', action: 'Volume down' },
+    { key: 'F', action: 'Fullscreen' },
+    { key: 'M', action: 'Mute' },
+    { key: '> / <', action: 'Speed up / down' },
+    { key: '?', action: 'Show shortcuts' },
+];
+
 export default function VideoPlayer({
     url,
     subtitles = [],
@@ -39,6 +67,7 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const artRef = useRef<Artplayer | null>(null);
+    const hlsRef = useRef<Hls | null>(null);
     const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
         null,
     );
@@ -47,6 +76,75 @@ export default function VideoPlayer({
         target: number;
     } | null>(null);
     const skipDismissedRef = useRef<Set<string>>(new Set());
+    const [showShortcuts, setShowShortcuts] = useState(false);
+
+    // Keyboard shortcut handler
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent) => {
+            // Don't capture when typing in inputs
+            const tag = (e.target as HTMLElement)?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+            const art = artRef.current;
+            if (!art) return;
+
+            switch (e.key) {
+                case ' ':
+                case 'k':
+                case 'K':
+                    e.preventDefault();
+                    art.playing ? art.pause() : art.play();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    art.currentTime = Math.max(0, art.currentTime - 5);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    art.currentTime = Math.min(art.duration, art.currentTime + 5);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    art.volume = Math.min(1, art.volume + 0.1);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    art.volume = Math.max(0, art.volume - 0.1);
+                    break;
+                case 'f':
+                case 'F':
+                    e.preventDefault();
+                    art.fullscreen = !art.fullscreen;
+                    break;
+                case 'm':
+                case 'M':
+                    e.preventDefault();
+                    art.muted = !art.muted;
+                    break;
+                case '>':
+                    e.preventDefault();
+                    art.playbackRate = Math.min(3, art.playbackRate + 0.25);
+                    break;
+                case '<':
+                    e.preventDefault();
+                    art.playbackRate = Math.max(0.25, art.playbackRate - 0.25);
+                    break;
+                case '?':
+                    e.preventDefault();
+                    setShowShortcuts((prev) => !prev);
+                    break;
+                case 'Escape':
+                    setShowShortcuts(false);
+                    break;
+            }
+        },
+        [],
+    );
+
+    useEffect(() => {
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [handleKeyDown]);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -125,17 +223,68 @@ export default function VideoPlayer({
             settings: [...subtitleSettings],
             customType: isHls
                 ? {
-                      m3u8: function (video: HTMLVideoElement, url: string) {
+                      m3u8: function (video: HTMLVideoElement, hlsUrl: string) {
                           if (Hls.isSupported()) {
                               const hls = new Hls();
-                              hls.loadSource(url);
+                              hlsRef.current = hls;
+                              hls.loadSource(hlsUrl);
                               hls.attachMedia(video);
+
+                              // Quality selector from HLS levels
+                              hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                                  const levels = hls.levels;
+                                  if (levels.length <= 1) return;
+
+                                  const preferred = getPreferredQuality();
+                                  const qualitySelector = levels.map((level, index) => {
+                                      const height = level.height;
+                                      const label = `${height}p`;
+                                      return {
+                                          html: label,
+                                          default: preferred === label,
+                                          value: index,
+                                      };
+                                  });
+
+                                  // Apply saved preference
+                                  if (preferred !== 'auto') {
+                                      const matchIdx = levels.findIndex(
+                                          (l) => `${l.height}p` === preferred,
+                                      );
+                                      if (matchIdx >= 0) {
+                                          hls.currentLevel = matchIdx;
+                                      }
+                                  }
+
+                                  const hasDefault = qualitySelector.some((q) => q.default);
+
+                                  art.setting.add({
+                                      html: 'Quality',
+                                      width: 200,
+                                      tooltip: preferred !== 'auto' ? preferred : 'Auto',
+                                      selector: [
+                                          {
+                                              html: 'Auto',
+                                              default: !hasDefault,
+                                              value: -1,
+                                          },
+                                          ...qualitySelector,
+                                      ],
+                                      onSelect: function (item: { html: string; value?: number }) {
+                                          const level = typeof item.value === 'number' ? item.value : -1;
+                                          hls.currentLevel = level;
+                                          const quality = item.html;
+                                          savePreferredQuality(quality === 'Auto' ? 'auto' : quality);
+                                          return item.html;
+                                      },
+                                  });
+                              });
                           } else if (
                               video.canPlayType(
                                   'application/vnd.apple.mpegurl',
                               )
                           ) {
-                              video.src = url;
+                              video.src = hlsUrl;
                           }
                       },
                   }
@@ -224,6 +373,10 @@ export default function VideoPlayer({
             if (progressIntervalRef.current) {
                 clearInterval(progressIntervalRef.current);
             }
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+            }
             art.destroy(false);
         };
     }, [url]);
@@ -235,6 +388,9 @@ export default function VideoPlayer({
         artRef.current.currentTime = skipButton.target;
         setSkipButton(null);
     };
+
+    // Detect touch device for hiding shortcut overlay
+    const isTouchDevice = typeof window !== 'undefined' && 'ontouchstart' in window;
 
     return (
         <div className="relative">
@@ -262,6 +418,33 @@ export default function VideoPlayer({
                         />
                     </svg>
                 </button>
+            )}
+
+            {/* Keyboard shortcut overlay — desktop only */}
+            {showShortcuts && !isTouchDevice && (
+                <div
+                    className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-base/85 backdrop-blur-sm"
+                    onClick={() => setShowShortcuts(false)}
+                >
+                    <div className="w-72 rounded-xl border border-subtle bg-surface p-5 shadow-xl">
+                        <h3 className="mb-3 text-center font-display text-sm font-bold text-primary">
+                            Keyboard Shortcuts
+                        </h3>
+                        <div className="space-y-1.5">
+                            {SHORTCUTS.map((s) => (
+                                <div key={s.key} className="flex items-center justify-between text-xs">
+                                    <kbd className="rounded bg-input px-2 py-0.5 font-mono text-accent">
+                                        {s.key}
+                                    </kbd>
+                                    <span className="text-theme-secondary">{s.action}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="mt-3 text-center text-xs text-theme-muted">
+                            Press ? or Esc to close
+                        </p>
+                    </div>
+                </div>
             )}
         </div>
     );

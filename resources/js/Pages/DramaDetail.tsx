@@ -1,8 +1,14 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import EpisodeList from '@/Components/EpisodeList';
+import FavoriteButton from '@/Components/FavoriteButton';
+import ReviewSection from '@/Components/ReviewSection';
+import ShareButton from '@/Components/ShareButton';
+import SkeletonDetail from '@/Components/SkeletonDetail';
+import { useToast } from '@/Components/ToastContext';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { DramaEpisode, DramaInfo, WatchlistItem } from '@/types/anime';
+import usePageLoading from '@/hooks/usePageLoading';
+import { DramaEpisode, DramaInfo, ReviewItem, WatchlistItem } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import DOMPurify from 'dompurify';
 import { useRef, useState } from 'react';
@@ -10,6 +16,9 @@ import { useRef, useState } from 'react';
 interface DramaDetailProps {
     drama: DramaInfo;
     watchlistEntry?: WatchlistItem | null;
+    reviews?: ReviewItem[];
+    userReview?: ReviewItem | null;
+    isFavorited?: boolean;
 }
 
 function GuestNav() {
@@ -59,6 +68,7 @@ function WatchlistDropdown({
 }) {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const toast = useToast();
 
     const statuses = [
         { value: 'watching', label: 'Watching' },
@@ -68,19 +78,26 @@ function WatchlistDropdown({
     ];
 
     const handleSelect = (status: string) => {
+        const label = statuses.find((s) => s.value === status)?.label || status;
         router.post(route('watchlist.store'), {
             anime_id: dramaId,
             anime_title: dramaTitle,
             anime_image: dramaImage,
             status,
             content_type: 'drama',
+        }, {
+            onSuccess: () => toast.success(`Marked as "${label}"`),
+            onError: () => toast.error('Failed to update watchlist'),
         });
         setOpen(false);
     };
 
     const handleRemove = () => {
         if (watchlistEntry) {
-            router.delete(route('watchlist.destroy', { watchlist: watchlistEntry.id }));
+            router.delete(route('watchlist.destroy', { watchlist: watchlistEntry.id }), {
+                onSuccess: () => toast.success('Removed from watchlist'),
+                onError: () => toast.error('Failed to remove from watchlist'),
+            });
         }
         setOpen(false);
     };
@@ -143,11 +160,16 @@ function WatchlistDropdown({
     );
 }
 
-function DramaDetailContent({ drama, watchlistEntry }: DramaDetailProps) {
+function DramaDetailContent({ drama, watchlistEntry, reviews = [], userReview, isFavorited = false }: DramaDetailProps) {
     const { auth } = usePage().props as { auth?: { user?: { id: number } } };
     const episodes = (drama.episodes || []) as DramaEpisode[];
     const seasons = [...new Set(episodes.map((ep) => ep.season))].sort((a, b) => a - b);
     const [selectedSeason, setSelectedSeason] = useState(seasons[0] || 1);
+    const loading = usePageLoading();
+
+    if (loading) {
+        return <SkeletonDetail />;
+    }
 
     if (drama.error) {
         return (
@@ -258,13 +280,24 @@ function DramaDetailContent({ drama, watchlistEntry }: DramaDetailProps) {
                                 </Link>
                             )}
                             {auth?.user && (
-                                <WatchlistDropdown
-                                    dramaId={drama.id}
-                                    dramaTitle={drama.title}
-                                    dramaImage={drama.image}
-                                    watchlistEntry={watchlistEntry}
-                                />
+                                <>
+                                    <WatchlistDropdown
+                                        dramaId={drama.id}
+                                        dramaTitle={drama.title}
+                                        dramaImage={drama.image}
+                                        watchlistEntry={watchlistEntry}
+                                    />
+                                    <FavoriteButton
+                                        animeId={drama.id}
+                                        animeTitle={drama.title}
+                                        animeImage={drama.image}
+                                        contentType="drama"
+                                        isFavorited={isFavorited}
+                                    />
+                                    <ShareButton title={drama.title} />
+                                </>
                             )}
+                            {!auth?.user && <ShareButton title={drama.title} />}
                         </div>
                     </div>
                 </div>
@@ -295,6 +328,14 @@ function DramaDetailContent({ drama, watchlistEntry }: DramaDetailProps) {
                         />
                     </div>
                 )}
+
+                {/* Reviews */}
+                <ReviewSection
+                    animeId={drama.id}
+                    contentType="drama"
+                    reviews={reviews}
+                    userReview={userReview}
+                />
             </div>
         </>
     );

@@ -1,3 +1,4 @@
+import { useToast } from '@/Components/ToastContext';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { ContentType, WatchlistItem } from '@/types/anime';
 import { Head, Link, router } from '@inertiajs/react';
@@ -24,14 +25,22 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function Watchlist({ watchlist, currentStatus, currentContentType = 'anime' }: WatchlistProps) {
+    const toast = useToast();
+
     const handleStatusChange = (itemId: number, newStatus: string) => {
         router.patch(route('watchlist.update', { watchlist: itemId }), {
             status: newStatus,
+        }, {
+            onSuccess: () => toast.success('Status updated'),
+            onError: () => toast.error('Failed to update status'),
         });
     };
 
     const handleRemove = (itemId: number) => {
-        router.delete(route('watchlist.destroy', { watchlist: itemId }));
+        router.delete(route('watchlist.destroy', { watchlist: itemId }), {
+            onSuccess: () => toast.success('Removed from watchlist'),
+            onError: () => toast.error('Failed to remove'),
+        });
     };
 
     return (

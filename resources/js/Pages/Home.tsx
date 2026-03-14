@@ -1,7 +1,10 @@
 import AnimeCard from '@/Components/AnimeCard';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
+import HeroBanner from '@/Components/HeroBanner';
+import SkeletonGrid from '@/Components/SkeletonGrid';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import usePageLoading from '@/hooks/usePageLoading';
 import { AnimeResult, AnimeSearchResponse, WatchHistoryItem } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
@@ -108,11 +111,37 @@ function GuestNav() {
 }
 
 function HomeContent({ trending, popular, recent, continueWatching }: HomeProps) {
+    const loading = usePageLoading();
+
+    if (loading) {
+        return (
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <div className="mb-4 h-7 w-32 animate-pulse rounded bg-input" />
+                <SkeletonGrid count={12} />
+            </div>
+        );
+    }
+
     return (
         <>
             <Head title="Home" />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                {/* Hero Banner */}
+                {trending?.results?.length > 0 && (
+                    <HeroBanner
+                        slides={trending.results.slice(0, 5).map((anime) => ({
+                            id: anime.id,
+                            title: anime.title,
+                            image: anime.image,
+                            rating: anime.rating,
+                            type: anime.type,
+                            watchUrl: route('anime.show', { id: anime.id }),
+                            detailUrl: route('anime.show', { id: anime.id }),
+                        }))}
+                    />
+                )}
+
                 {/* Continue Watching */}
                 {continueWatching && continueWatching.length > 0 && (
                     <section className="mb-10">

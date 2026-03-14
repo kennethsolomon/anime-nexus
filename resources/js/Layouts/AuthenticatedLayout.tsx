@@ -1,6 +1,8 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
 import Dropdown from '@/Components/Dropdown';
+import NotificationBell from '@/Components/NotificationBell';
+import ThemeToggle from '@/Components/ThemeToggle';
 import { Link, router, usePage } from '@inertiajs/react';
 import { PropsWithChildren, useState } from 'react';
 
@@ -81,6 +83,29 @@ export default function Authenticated({ children }: PropsWithChildren) {
                         {/* Right nav */}
                         <div className="hidden items-center gap-1 sm:flex">
                             <Link
+                                href={route('favorites.index')}
+                                className={`rounded-lg p-2 transition ${
+                                    route().current('favorites.*')
+                                        ? 'text-accent'
+                                        : 'text-theme-secondary hover:text-primary'
+                                }`}
+                                title="Favorites"
+                            >
+                                <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                    />
+                                </svg>
+                            </Link>
+                            <Link
                                 href={route('watchlist.index')}
                                 className={`rounded-lg p-2 transition ${
                                     route().current('watchlist.*')
@@ -100,6 +125,29 @@ export default function Authenticated({ children }: PropsWithChildren) {
                                         strokeLinejoin="round"
                                         strokeWidth={2}
                                         d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                                    />
+                                </svg>
+                            </Link>
+                            <Link
+                                href={route('dashboard')}
+                                className={`rounded-lg p-2 transition ${
+                                    route().current('dashboard')
+                                        ? 'text-accent'
+                                        : 'text-theme-secondary hover:text-primary'
+                                }`}
+                                title="Dashboard"
+                            >
+                                <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                                     />
                                 </svg>
                             </Link>
@@ -126,6 +174,9 @@ export default function Authenticated({ children }: PropsWithChildren) {
                                     />
                                 </svg>
                             </Link>
+
+                            <ThemeToggle />
+                            <NotificationBell />
 
                             <div className="relative ml-2">
                                 <Dropdown>
@@ -235,6 +286,12 @@ export default function Authenticated({ children }: PropsWithChildren) {
                             className="flex items-center gap-3 px-4 py-2 text-sm text-theme-secondary hover:bg-input hover:text-primary"
                         >
                             Home
+                        </Link>
+                        <Link
+                            href={route('favorites.index')}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-theme-secondary hover:bg-input hover:text-primary"
+                        >
+                            Favorites
                         </Link>
                         <Link
                             href={route('watchlist.index')}

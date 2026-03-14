@@ -107,6 +107,32 @@ export interface DramaSearchResponse {
     message?: string;
 }
 
+export interface ReviewItem {
+    id: number;
+    user_id: number;
+    anime_id: string;
+    content_type: ContentType;
+    rating: number;
+    body: string | null;
+    created_at: string;
+    updated_at: string;
+    user?: { id: number; name: string };
+}
+
+export interface CommentItem {
+    id: number;
+    user_id: number;
+    anime_id: string;
+    episode_id: string;
+    content_type: ContentType;
+    body: string;
+    parent_id: number | null;
+    created_at: string;
+    updated_at: string;
+    user?: { id: number; name: string };
+    replies?: CommentItem[];
+}
+
 export interface WatchlistItem {
     id: number;
     anime_id: string;

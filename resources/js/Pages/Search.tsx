@@ -1,10 +1,14 @@
 import AnimeCard from '@/Components/AnimeCard';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import ContentTypeSwitcher from '@/Components/ContentTypeSwitcher';
+import LoadMoreButton from '@/Components/LoadMoreButton';
+import SearchFilters from '@/Components/SearchFilters';
+import SkeletonGrid from '@/Components/SkeletonGrid';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { AnimeSearchResponse } from '@/types/anime';
+import usePageLoading from '@/hooks/usePageLoading';
+import { AnimeResult, AnimeSearchResponse } from '@/types/anime';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface SearchProps {
     results: AnimeSearchResponse | [];
@@ -49,6 +53,34 @@ function GuestNav() {
 
 function SearchContent({ results, query, page, isGenre }: SearchProps) {
     const [searchQuery, setSearchQuery] = useState(query);
+    const [typeFilter, setTypeFilter] = useState('All');
+    const [accumulated, setAccumulated] = useState<AnimeResult[]>([]);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const prevQueryRef = useRef(query);
+    const loading = usePageLoading();
+
+    const resultData = Array.isArray(results) ? null : results;
+    const currentItems = resultData?.results || [];
+    const hasNext = resultData?.hasNextPage || false;
+
+    // Accumulate results: reset on new query, append on page change
+    useEffect(() => {
+        if (query !== prevQueryRef.current) {
+            // New search — reset
+            setAccumulated(currentItems);
+            prevQueryRef.current = query;
+        } else if (page === 1) {
+            setAccumulated(currentItems);
+        } else {
+            // Append new page results (deduplicate by id)
+            setAccumulated((prev) => {
+                const existingIds = new Set(prev.map((i) => i.id));
+                const newItems = currentItems.filter((i) => !existingIds.has(i.id));
+                return [...prev, ...newItems];
+            });
+        }
+        setLoadingMore(false);
+    }, [currentItems, query, page]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,9 +89,26 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
         }
     };
 
-    const resultData = Array.isArray(results) ? null : results;
-    const items = resultData?.results || [];
-    const hasNext = resultData?.hasNextPage || false;
+    const handleLoadMore = () => {
+        setLoadingMore(true);
+        router.get(
+            isGenre
+                ? route('anime.genre', { genre: query })
+                : route('anime.search'),
+            {
+                ...(isGenre ? {} : { q: query }),
+                page: page + 1,
+            },
+            { preserveScroll: true, preserveState: true },
+        );
+    };
+
+    const filteredItems = useMemo(() => {
+        if (typeFilter === 'All') return accumulated;
+        return accumulated.filter((item) =>
+            item.type?.toUpperCase() === typeFilter.toUpperCase(),
+        );
+    }, [accumulated, typeFilter]);
 
     return (
         <>
@@ -82,10 +131,23 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
                     {isGenre ? `Genre: ${query}` : `Results for "${query}"`}
                 </h1>
 
-                {items.length > 0 ? (
+                <SearchFilters
+                    activeGenre={isGenre ? query : undefined}
+                    activeType={typeFilter}
+                    onGenreSelect={(genre) => {
+                        if (genre) {
+                            router.get(route('anime.genre', { genre: genre.toLowerCase() }));
+                        }
+                    }}
+                    onTypeSelect={setTypeFilter}
+                />
+
+                {loading && accumulated.length === 0 ? (
+                    <SkeletonGrid count={12} />
+                ) : filteredItems.length > 0 ? (
                     <>
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                            {items.map((anime) => (
+                            {filteredItems.map((anime) => (
                                 <AnimeCard
                                     key={anime.id}
                                     id={anime.id}
@@ -98,45 +160,12 @@ function SearchContent({ results, query, page, isGenre }: SearchProps) {
                             ))}
                         </div>
 
-                        {/* Pagination */}
-                        <div className="mt-8 flex justify-center gap-4">
-                            {page > 1 && (
-                                <button
-                                    onClick={() =>
-                                        router.get(
-                                            isGenre
-                                                ? route('anime.genre', { genre: query })
-                                                : route('anime.search'),
-                                            {
-                                                ...(isGenre ? {} : { q: query }),
-                                                page: page - 1,
-                                            },
-                                        )
-                                    }
-                                    className="rounded-lg border border-muted bg-input px-4 py-2 text-sm text-primary transition hover:border-accent"
-                                >
-                                    Previous
-                                </button>
-                            )}
-                            {hasNext && (
-                                <button
-                                    onClick={() =>
-                                        router.get(
-                                            isGenre
-                                                ? route('anime.genre', { genre: query })
-                                                : route('anime.search'),
-                                            {
-                                                ...(isGenre ? {} : { q: query }),
-                                                page: page + 1,
-                                            },
-                                        )
-                                    }
-                                    className="rounded-lg border border-muted bg-input px-4 py-2 text-sm text-primary transition hover:border-accent"
-                                >
-                                    Next
-                                </button>
-                            )}
-                        </div>
+                        <LoadMoreButton
+                            loading={loadingMore}
+                            onClick={handleLoadMore}
+                            hasMore={hasNext}
+                            shownCount={filteredItems.length}
+                        />
                     </>
                 ) : (
                     query && (

@@ -109,6 +109,73 @@ Progress is tracked in `tasks/workflow-status.md`. This file persists across con
 - When starting a new task, check if `tasks/workflow-status.md` has any `done` or `skipped` steps. If yes, ask: "Existing workflow detected. Start fresh and reset tracker?"
 - Reset sets all steps to `not yet` and marks step 1 as `>> next <<`.
 
+## Sub-Agent Patterns
+<!-- BEGIN:sub-agent-patterns -->
+
+Use Claude Code sub-agents to parallelize independent work and speed up development.
+
+### Codebase Exploration (before implementation)
+
+Before implementing a feature, launch parallel Explore agents to understand the affected areas:
+
+```
+Use Agent tool with subagent_type="Explore" — launch all in a single message:
+  - Agent 1: Explore related models, migrations, and relationships
+  - Agent 2: Explore existing routes, controllers, and middleware
+  - Agent 3: Explore test patterns and existing test coverage for the area
+```
+
+This replaces sequential file reading and gives a complete picture before writing code.
+
+### Parallel Quality Checks (/laravel-lint)
+
+After Pint formats files, run PHPStan and Rector in parallel (both are read-only):
+
+```
+1. Pint (sequential — modifies files)
+2. Then in parallel:
+   - Agent 1: PHPStan analyse
+   - Agent 2: Rector --dry-run
+```
+
+### Code Review Parallelization
+
+For `/review` and `/security-check`, split into parallel agents for faster feedback:
+
+```
+Launch in a single message:
+  - Agent 1: Security review — OWASP, injection, auth bypass
+  - Agent 2: Performance review — N+1 queries, missing indexes, cache misses
+  - Agent 3: Test coverage gaps — untested paths, missing edge cases
+```
+
+### Worktree Isolation for Risky Changes
+
+For refactors or experimental approaches, use `isolation: "worktree"` to try the change on an isolated copy:
+
+```
+Agent tool with isolation: "worktree":
+  - Try the refactor in isolation
+  - If it works, apply the same changes to the main worktree
+  - If it fails, the worktree is discarded — no cleanup needed
+```
+
+Use worktree agents when:
+- Refactoring core services or models
+- Trying an approach you're not sure will work
+- Changes that touch many files and could be hard to undo
+
+### Background Agents for Long-Running Tasks
+
+Use `run_in_background: true` for tasks that don't block your next step:
+
+```
+- Background agent: Run full test suite while you continue implementing
+- Background agent: PHPStan analysis while you fix Rector suggestions
+- You'll be notified when they complete
+```
+<!-- END:sub-agent-patterns -->
+
 ## Commands
 
 | Command | Purpose |
