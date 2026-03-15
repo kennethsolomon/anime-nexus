@@ -80,7 +80,7 @@ final class CheckNewEpisodes implements ShouldQueue
 
         // Dedup using last_notified_episode with row lock to prevent race conditions
         DB::transaction(function () use ($user, $item, $totalEpisodes, $maxWatched): void {
-            /** @var Watchlist $lockedItem */
+            /** @var Watchlist|null $lockedItem */
             $lockedItem = Watchlist::where('id', $item->id)->lockForUpdate()->first();
 
             if (! $lockedItem) {
