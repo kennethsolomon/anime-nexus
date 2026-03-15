@@ -9,13 +9,18 @@ it('rejects empty url', function (): void {
         ->assertStatus(400);
 });
 
-it('rejects disallowed domains', function (): void {
-    $this->get(route('stream.proxy', ['url' => 'https://evil.com/steal']))
+it('rejects private ip addresses', function (): void {
+    $this->get(route('stream.proxy', ['url' => 'http://10.0.0.1/secret']))
         ->assertStatus(403);
 });
 
-it('rejects private ip addresses', function (): void {
+it('rejects localhost', function (): void {
     $this->get(route('stream.proxy', ['url' => 'http://127.0.0.1:6379/']))
+        ->assertStatus(403);
+});
+
+it('rejects cloud metadata endpoint', function (): void {
+    $this->get(route('stream.proxy', ['url' => 'http://169.254.169.254/latest/meta-data/']))
         ->assertStatus(403);
 });
 

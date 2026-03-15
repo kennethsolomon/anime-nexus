@@ -59,10 +59,6 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
     const toast = useToast();
     const loading = usePageLoading();
 
-    if (loading) {
-        return <SkeletonPlayer />;
-    }
-
     const source =
         streaming.sources?.find((s) => s.quality === 'default' || s.quality === 'auto') ||
         streaming.sources?.find((s) => s.isM3U8) ||
@@ -78,47 +74,55 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
             ? anime.episodes[currentIndex + 1]
             : null;
 
+    const postProgress = useCallback(
+        (data: Record<string, unknown>): Promise<boolean> => {
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            return fetch(route('history.store'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify(data),
+            }).then((res) => res.ok).catch(() => false);
+        },
+        [],
+    );
+
     const saveProgress = useCallback(
         (seconds: number) => {
             if (!auth?.user || !currentEpisode) return;
-            router.post(
-                route('history.store'),
-                {
-                    anime_id: anime.id,
-                    anime_title: anime.title,
-                    anime_image: anime.image,
-                    episode_id: episodeId,
-                    episode_number: currentEpisode.number,
-                    progress_seconds: seconds,
-                    completed: false,
-                    content_type: 'anime',
-                },
-                { preserveScroll: true, preserveState: true },
-            );
+            postProgress({
+                anime_id: anime.id,
+                anime_title: anime.title,
+                anime_image: anime.image,
+                episode_id: episodeId,
+                episode_number: currentEpisode.number,
+                progress_seconds: seconds,
+                completed: false,
+                content_type: 'anime',
+            });
         },
-        [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode],
+        [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode, postProgress],
     );
 
     const handleEnded = useCallback(() => {
         if (auth?.user && currentEpisode) {
-            router.post(
-                route('history.store'),
-                {
-                    anime_id: anime.id,
-                    anime_title: anime.title,
-                    anime_image: anime.image,
-                    episode_id: episodeId,
-                    episode_number: currentEpisode.number,
-                    progress_seconds: 0,
-                    completed: true,
-                    content_type: 'anime',
-                },
-                {
-                    preserveScroll: true,
-                    preserveState: true,
-                    onSuccess: () => toast.success(`Episode ${currentEpisode.number} completed`),
-                },
-            );
+            postProgress({
+                anime_id: anime.id,
+                anime_title: anime.title,
+                anime_image: anime.image,
+                episode_id: episodeId,
+                episode_number: currentEpisode.number,
+                progress_seconds: 0,
+                completed: true,
+                content_type: 'anime',
+            }).then((ok) => {
+                if (ok) {
+                    toast.success(`Episode ${currentEpisode.number} completed`);
+                }
+            });
         }
         if (nextEpisode) {
             router.get(
@@ -128,7 +132,11 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                 }),
             );
         }
-    }, [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode, nextEpisode, toast]);
+    }, [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode, nextEpisode, toast, postProgress]);
+
+    if (loading) {
+        return <SkeletonPlayer />;
+    }
 
     return (
         <>

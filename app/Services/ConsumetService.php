@@ -73,7 +73,9 @@ final readonly class ConsumetService
     {
         $cacheKey = "consumet:trending:{$page}:{$perPage}";
 
-        return $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->get('/anime/animekai/trending', ['page' => $page, 'perPage' => $perPage]));
+        return $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->requestWithFallback(
+            fn (string $provider): array => $this->get("/anime/{$provider}/trending", ['page' => $page, 'perPage' => $perPage]),
+        ));
     }
 
     /**
@@ -85,7 +87,9 @@ final readonly class ConsumetService
     {
         $cacheKey = "consumet:popular:{$page}:{$perPage}";
 
-        return $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->get('/anime/animekai/popular', ['page' => $page, 'perPage' => $perPage]));
+        return $this->cached($cacheKey, self::CACHE_METADATA, fn (): array => $this->requestWithFallback(
+            fn (string $provider): array => $this->get("/anime/{$provider}/popular", ['page' => $page, 'perPage' => $perPage]),
+        ));
     }
 
     /**
@@ -97,7 +101,9 @@ final readonly class ConsumetService
     {
         $cacheKey = "consumet:recent:{$page}:{$perPage}";
 
-        return $this->cached($cacheKey, self::CACHE_EPISODES, fn (): array => $this->get('/anime/animekai/recent-episodes', ['page' => $page, 'perPage' => $perPage]));
+        return $this->cached($cacheKey, self::CACHE_EPISODES, fn (): array => $this->requestWithFallback(
+            fn (string $provider): array => $this->get("/anime/{$provider}/recent-episodes", ['page' => $page, 'perPage' => $perPage]),
+        ));
     }
 
     /**
@@ -246,13 +252,25 @@ final readonly class ConsumetService
      */
     private function requestWithFallback(callable $callback): array
     {
+        $lastResult = null;
+
         foreach (self::PROVIDERS as $provider) {
             try {
                 $result = $callback($provider);
 
-                if (! isset($result['error'])) {
-                    return $result;
+                if (isset($result['error'])) {
+                    continue;
                 }
+
+                // Treat empty results as failure so next provider is tried
+                $results = $result['results'] ?? null;
+                if (is_array($results) && $results === []) {
+                    $lastResult ??= $result;
+
+                    continue;
+                }
+
+                return $result;
             } catch (ConnectionException $e) {
                 Log::warning("Consumet provider {$provider} failed: {$e->getMessage()}");
 
@@ -260,7 +278,7 @@ final readonly class ConsumetService
             }
         }
 
-        return ['error' => true, 'message' => 'All anime sources are currently unavailable'];
+        return $lastResult ?? ['error' => true, 'message' => 'All anime sources are currently unavailable'];
     }
 
     /**
