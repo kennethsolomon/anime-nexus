@@ -22,11 +22,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Share links** — native share API on mobile, clipboard fallback on desktop
 - **Notification bell** — unread count badge with dropdown in nav
 - **New episode detection** — queued job checks "Watching" list for new episodes on first page load per session
+- **Dismiss/clear notifications** — X button on each notification, "Clear all" button in dropdown header
 - **PWA support** — web app manifest + service worker for installability
 - **Dark/light theme toggle** — CSS custom properties with localStorage persistence
 - **JS test infrastructure** — Vitest + React Testing Library (8 toast unit tests)
 
 ### Fixed
+- Duplicate episode notifications — replaced unread-based dedup with `last_notified_episode` tracking on watchlists, DB transaction with row lock prevents race conditions
+- Silent notification fetch failure — NotificationBell now resets to empty state on error instead of hanging
 - Blank page when navigating from Watch to Home via Nexus logo — React hooks were called after early return
 - Stream proxy 403 errors from rotating CDN domains — removed domain allowlist in favor of IP-based SSRF protection
 - Progress/completion saves interfering with Inertia navigation — replaced `router.post()` with `fetch()`
