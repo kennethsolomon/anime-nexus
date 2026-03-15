@@ -150,10 +150,8 @@ final class StreamController extends Controller
 
         $ipToCheck = $resolvedIp;
 
-        if (filter_var($ipToCheck, FILTER_VALIDATE_IP) !== false) {
-            if (filter_var($ipToCheck, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-                return false;
-            }
+        if (filter_var($ipToCheck, FILTER_VALIDATE_IP) !== false && filter_var($ipToCheck, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return false;
         }
 
         // All proxy URLs are generated server-side from Consumet API responses,
