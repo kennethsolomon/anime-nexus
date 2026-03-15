@@ -148,8 +148,7 @@ final class StreamController extends Controller
         // Resolve DNS and validate IP (prevents SSRF to internal services)
         $resolvedIp = gethostbyname($host);
 
-        // Determine the IP to validate: resolved IP for hostnames, the host itself for raw IPs
-        $ipToCheck = $resolvedIp !== $host ? $resolvedIp : $host;
+        $ipToCheck = $resolvedIp;
 
         if (filter_var($ipToCheck, FILTER_VALIDATE_IP) !== false) {
             if (filter_var($ipToCheck, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
