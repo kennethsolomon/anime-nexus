@@ -145,13 +145,17 @@ final class StreamController extends Controller
             return false;
         }
 
-        // Resolve DNS once and validate IP (prevents SSRF to internal services)
+        // Resolve DNS and validate IP (prevents SSRF to internal services)
         $resolvedIp = gethostbyname($host);
-        if ($resolvedIp !== $host) {
-            if (filter_var($resolvedIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+
+        // Determine the IP to validate: resolved IP for hostnames, the host itself for raw IPs
+        $ipToCheck = $resolvedIp !== $host ? $resolvedIp : $host;
+
+        if (filter_var($ipToCheck, FILTER_VALIDATE_IP) !== false) {
+            if (filter_var($ipToCheck, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
                 return false;
             }
-            if (str_starts_with($resolvedIp, '127.') || $resolvedIp === '::1') {
+            if (str_starts_with($ipToCheck, '127.') || $ipToCheck === '::1') {
                 return false;
             }
         }
