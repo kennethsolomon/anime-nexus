@@ -96,9 +96,14 @@ Progress is tracked in `tasks/workflow-status.md`. This file persists across con
 
 4. **Conditional commits** (11, 13, 16, 18): Auto-skip if no changes were made. Record reason (e.g., "lint was clean", "tests passed first try").
 
-5. **Loop steps** (10, 12, 15, 17): Fix issues immediately and re-run. Do NOT ask the user to re-run — fix and re-run automatically. Track attempt number in Notes (e.g., "clean on attempt 3").
+5. **Loop steps are HARD GATES** (10, 12, 15, 17): These steps BLOCK all forward progress until they pass clean. Fix issues immediately and re-run. Do NOT ask the user to re-run — fix and re-run automatically. Track attempt number in Notes (e.g., "clean on attempt 3").
+   - **Step 10 (Lint)**: Pint must format clean, PHPStan must report 0 errors, Rector must suggest 0 changes. ALL THREE must pass — not just one.
+   - **Step 12 (Test)**: Both BE (Pest) and FE (Vitest) must pass with 100% coverage on new code.
+   - **Step 15 (Security)**: 0 issues across all severities.
+   - **Step 17 (Review)**: 0 issues including nitpicks.
+   - **DO NOT mark these steps as `done` until every check passes.** If even one tool fails, the step is NOT done. Never proceed to the next step with errors remaining.
 
-6. **Never skip steps without confirmation.** Steps cannot run out of order.
+6. **Never skip steps without confirmation.** Steps cannot run out of order. Quality gate steps (10, 12, 15, 17) can NEVER be skipped.
 
 7. **Never auto-advance.** When one step completes, stop and tell the user which step is next. Do not proceed automatically.
 
