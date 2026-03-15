@@ -1,8 +1,8 @@
 # Security Audit — 2026-03-15
 
-**Scope:** Changed files on branch `fix/navigation-and-proxy-bugs`
+**Scope:** Changed files on branch `fix/duplicate-episode-notifications`
 **Stack:** Laravel 12 / Inertia + React (TypeScript) / PHP 8.4 / SQLite
-**Files audited:** 19
+**Files audited:** 7 (excluding tests, package files)
 
 ## Critical (must fix before deploy)
 
@@ -22,15 +22,39 @@ None.
 
 ## Passed Checks
 
-- **OWASP A01 Broken Access Control:** StreamController proxy is public by design (required for HLS playback). Auth-gated routes properly use `auth` middleware. WatchlistController enforces user ownership at `destroy()` (line 77). Policies and Form Request `authorize()` methods gate all write operations.
-- **OWASP A03 Injection (SQL/XSS/Command):** No raw SQL — all queries use Eloquent with parameterized bindings. ConsumetService properly `urlencode()`s user input in URL paths (lines 62, 183). Watch.tsx uses React's auto-escaping — no `dangerouslySetInnerHTML`. No `eval()`, `exec()`, or shell commands.
-- **OWASP A04 Insecure Design:** Proxy rate-limited at 120 req/min (`throttle:120,1`). Auth endpoints rate-limited at 60 req/min. Login rate-limited at 5 attempts (LoginRequest `ensureIsNotRateLimited`). ConsumetService retries capped at 2 with 500ms delay.
-- **OWASP A05 Security Misconfiguration:** Config uses `env()` exclusively for secrets (config/services.php). No hardcoded credentials in any changed file. CSRF tokens properly included in frontend fetch requests (Watch.tsx:79-85).
-- **OWASP A10 SSRF:** StreamController implements multi-layer SSRF protection: scheme allowlist (HTTP/HTTPS only), DNS resolution with private/reserved IP blocking via `FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE`, redundant 127.x/::1 check, and DNS pinning via `CURLOPT_RESOLVE` to prevent rebinding. Empty and unparseable URLs rejected.
-- **Data Protection:** No PII logged. Error messages are generic ("Failed to fetch data from source"). Passwords use Laravel's `hashed` cast. User model hides `password` and `remember_token`.
-- **Error Handling:** ConsumetService gracefully degrades with stale cache fallback on ConnectionException. CheckNewEpisodes job wraps each item in try/catch. Proxy returns upstream error codes without leaking internal details.
-- **Test Coverage:** 99.8% code coverage (217 tests, 856 assertions). Tests cover SSRF blocking, auth enforcement, rate limiting, input validation, model relationships, and all controller paths.
-- **Secrets in Tests:** All test passwords are standard fixtures (`'password'`, `'wrong-password'`). No real credentials.
+- **OWASP A01 Broken Access Control:**
+  - `NotificationController::destroy` (line 57): Uses `$this->authorize('delete', $episodeNotification)` — policy enforces user ownership before deletion.
+  - `NotificationController::destroyAll` (line 69): Scoped to `$request->user()->id` — cannot delete other users' notifications.
+  - `EpisodeNotificationPolicy::delete` (line 17-19): Strict `$user->id === $notification->user_id` check.
+  - All new routes under `auth` middleware group (web.php:62-63).
+  - Route model binding on `{episodeNotification}` prevents IDOR — combined with policy check.
+
+- **OWASP A03 Injection (SQL/XSS):**
+  - Migration (line 23): Uses `havingRaw('COUNT(*) > 1')` — no user input, hardcoded SQL fragment. Safe.
+  - Migration (line 58): `DB::raw()` subquery uses column references only (`watchlists.user_id`, `watchlists.anime_id`). No user input interpolated. Safe.
+  - `CheckNewEpisodes` job: All database writes use Eloquent `create()` with `$fillable` guard. No raw SQL with user input.
+  - Frontend `NotificationBell.tsx`: Uses React JSX auto-escaping. Notification content (title, message) rendered as text nodes, not `dangerouslySetInnerHTML`. Safe.
+
+- **OWASP A04 Insecure Design:**
+  - `destroyAll` endpoint has no confirmation dialog — acceptable for notifications (low-value data, easily regenerated).
+  - All notification routes rate-limited at 60 req/min via middleware group (`throttle:60,1`).
+
+- **OWASP A05 Security Misconfiguration:**
+  - No new secrets or env vars introduced.
+  - `last_notified_episode` column is nullable with no default — safe additive schema change.
+
+- **Race Condition Prevention:**
+  - `CheckNewEpisodes::checkItem` (lines 82-109): DB transaction with `lockForUpdate()` on watchlist row prevents concurrent job runs from creating duplicate notifications. This directly fixes the reported bug.
+  - Lock scope is minimal (single row) — low deadlock risk.
+
+- **Data Integrity:**
+  - Migration dedup logic (lines 26-38): Keeps newest notification per user+anime pair, deletes older duplicates. Correct ordering by `created_at DESC`.
+  - Backfill query (lines 46-64): Read-only from `watch_histories`, write to `watchlists`. No data loss risk.
+
+- **Frontend Security:**
+  - `handleDismiss` uses `e.stopPropagation()` — prevents unintended navigation on dismiss click.
+  - `router.delete()` calls include CSRF token automatically via Inertia.
+  - No client-side secrets or API keys introduced.
 
 ## Summary
 

@@ -224,3 +224,63 @@ The notification system (bell icon, dropdown, mark-as-read) is built but nothing
 3. Queued to background — no page load impact
 4. Dedup: won't create duplicate notifications for the same anime
 5. Works for both anime and drama content types
+
+---
+
+## Bugfix: Duplicate Episode Notifications (2026-03-15)
+
+### Problem Statement
+
+Users receive multiple notifications for the same anime episode. The current dedup in `CheckNewEpisodes` job only checks `WHERE user_id = ? AND anime_id = ? AND read = false`, which fails in two ways:
+
+1. **Race condition**: Multiple concurrent jobs (from rapid page loads before session flag persists) all query the dedup check before any notification exists, so all pass and all insert duplicates.
+2. **Read-then-re-notify**: Once a user reads a notification, the next session's job finds no unread notification and creates another one for the same episode count.
+
+### Chosen Approach: `last_notified_episode` column on `watchlists` table
+
+Add a nullable integer column `last_notified_episode` to the existing `watchlists` table. The dedup check changes from "unread notification exists" to `totalEpisodes > last_notified_episode`. Wrap in a DB transaction with row lock to prevent race conditions.
+
+**New dedup flow in `CheckNewEpisodes`:**
+1. Begin transaction, lock the watchlist row (`lockForUpdate`)
+2. If `totalEpisodes <= $item->last_notified_episode` → skip (already notified)
+3. Also skip if `totalEpisodes <= $maxWatched` (no new episodes)
+4. Create `EpisodeNotification` record
+5. Update `$item->last_notified_episode = $totalEpisodes`
+6. Commit transaction
+
+**Additional feature: Dismiss/delete notification**
+- New backend route: `DELETE /notifications/{episodeNotification}` → deletes the notification
+- New backend route: `DELETE /notifications` → deletes all notifications for user
+- Frontend: add dismiss (X) button on each notification row
+- Frontend: add "Clear all" button in dropdown header
+- Policy: add `delete` method — only owner can delete
+
+**Migration:**
+1. Add `last_notified_episode` nullable unsigned integer to `watchlists`
+2. Data cleanup: delete duplicate `episode_notifications` rows (keep newest per user+anime)
+3. Backfill `last_notified_episode` from existing notification data
+
+**Key Decisions:**
+1. Column on `watchlists` (not separate table) — simplest, no new model, watchlist row already loaded in job loop
+2. Transaction + `lockForUpdate` — prevents race condition at DB level
+3. `last_notified_episode` survives read-state changes — no re-notification until genuinely new episode
+4. Dismiss feature lets users clean up their notification list
+5. Clean up existing duplicates in migration
+
+### Files to Change
+
+**Backend:**
+- `database/migrations/XXXX_add_last_notified_episode_to_watchlists.php` — new migration
+- `app/Models/Watchlist.php` — add `last_notified_episode` to fillable + casts
+- `app/Jobs/CheckNewEpisodes.php` — new dedup logic with transaction
+- `app/Http/Controllers/NotificationController.php` — add `destroy` + `destroyAll` methods
+- `app/Policies/EpisodeNotificationPolicy.php` — add `delete` method
+- `routes/web.php` — add DELETE routes
+
+**Frontend:**
+- `resources/js/Components/NotificationBell.tsx` — add dismiss button + clear all
+
+**Tests:**
+- Update `CheckNewEpisodesJobTest` for new dedup logic
+- Add tests for dismiss/delete endpoints
+- Update policy tests

@@ -408,3 +408,51 @@ Combined in single edit to `resources/js/Components/VideoPlayer.tsx`:
 - `npm run build` — success
 - `npm test` — 8 JS tests pass
 - `./vendor/bin/pest` — 81 PHP tests, 339 assertions, all pass
+
+---
+
+## 2026-03-15 — Fix Duplicate Episode Notifications
+
+### Plan
+
+#### Step 1: Migration — add `last_notified_episode` to `watchlists`
+- [ ] 1.1 Create migration: add nullable unsigned integer `last_notified_episode` to `watchlists`
+- [ ] 1.2 In same migration: delete duplicate `episode_notifications` (keep newest per user+anime)
+- [ ] 1.3 In same migration: backfill `last_notified_episode` from existing notification data
+
+#### Step 2: Update Watchlist model
+- [ ] 2.1 Add `last_notified_episode` to `$fillable`
+- [ ] 2.2 Add integer cast for `last_notified_episode`
+
+#### Step 3: Fix CheckNewEpisodes job dedup
+- [ ] 3.1 Replace unread-based dedup with `last_notified_episode` check
+- [ ] 3.2 Wrap check+create+update in `DB::transaction` with `lockForUpdate` on watchlist row
+- [ ] 3.3 After creating notification, update `$item->last_notified_episode = $totalEpisodes`
+
+#### Step 4: Add dismiss/delete notification endpoints
+- [ ] 4.1 Add `destroy` method to `NotificationController` — delete single notification
+- [ ] 4.2 Add `destroyAll` method to `NotificationController` — delete all user notifications
+- [ ] 4.3 Add `delete` method to `EpisodeNotificationPolicy`
+- [ ] 4.4 Add DELETE routes to `routes/web.php`
+
+#### Step 5: Update NotificationBell frontend
+- [ ] 5.1 Add dismiss (X) button on each notification row (stops propagation, doesn't navigate)
+- [ ] 5.2 Add "Clear all" button in dropdown header
+- [ ] 5.3 Wire up DELETE fetch calls to new endpoints
+- [ ] 5.4 Update local state on dismiss (remove from list, update unread count if was unread)
+
+---
+
+### Log
+
+**Step 1 (1.1–1.3): Migration** — Created `2026_03_15_140000_add_last_notified_episode_to_watchlists.php`. Adds nullable `last_notified_episode` column, deletes duplicate notifications (keeps newest per user+anime), backfills column from watch history. Migration runs clean.
+
+**Step 2 (2.1–2.2): Watchlist model** — Added `last_notified_episode` to `$fillable`, added `casts()` method with integer cast.
+
+**Step 3 (3.1–3.3): Job dedup fix** — Replaced unread-based dedup with `last_notified_episode` check inside `DB::transaction` with `lockForUpdate`. After creating notification, updates watchlist's `last_notified_episode = totalEpisodes`.
+
+**Step 4 (4.1–4.4): Delete endpoints** — Added `destroy` and `destroyAll` to NotificationController, `delete` to EpisodeNotificationPolicy, two DELETE routes to web.php.
+
+**Step 5 (5.1–5.4): Frontend** — Updated NotificationBell.tsx: dismiss X button (hidden, shows on hover, stops propagation), "Clear all" button in header, wired to DELETE endpoints, updates local state + unread count.
+
+**Tests:** Updated dedup test to use `last_notified_episode` instead of unread check. Added `last_notified_episode` assertion to creation test. All 217 tests pass (857 assertions).
