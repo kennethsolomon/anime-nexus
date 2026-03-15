@@ -10,6 +10,7 @@ use App\Models\Watchlist;
 use App\Services\ConsumetService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 final class CheckNewEpisodes implements ShouldQueue
@@ -77,27 +78,34 @@ final class CheckNewEpisodes implements ShouldQueue
             return;
         }
 
-        // Check for existing unread notification (dedup)
-        $exists = EpisodeNotification::where('user_id', $user->id)
-            ->where('anime_id', $item->anime_id)
-            ->where('read', false)
-            ->exists();
+        // Dedup using last_notified_episode with row lock to prevent race conditions
+        DB::transaction(function () use ($user, $item, $totalEpisodes, $maxWatched): void {
+            /** @var Watchlist $lockedItem */
+            $lockedItem = Watchlist::where('id', $item->id)->lockForUpdate()->first();
 
-        if ($exists) {
-            return;
-        }
+            if (! $lockedItem) {
+                return;
+            }
 
-        $newCount = $totalEpisodes - $maxWatched;
+            // Skip if we already notified for this episode count (or higher)
+            if ($lockedItem->last_notified_episode !== null && $totalEpisodes <= $lockedItem->last_notified_episode) {
+                return;
+            }
 
-        EpisodeNotification::create([
-            'user_id' => $user->id,
-            'anime_id' => $item->anime_id,
-            'anime_title' => $item->anime_title,
-            'anime_image' => $item->anime_image,
-            'content_type' => $item->content_type ?? 'anime',
-            'message' => $newCount === 1
-                ? 'New episode available!'
-                : "{$newCount} new episodes available!",
-        ]);
+            $newCount = $totalEpisodes - $maxWatched;
+
+            EpisodeNotification::create([
+                'user_id' => $user->id,
+                'anime_id' => $item->anime_id,
+                'anime_title' => $item->anime_title,
+                'anime_image' => $item->anime_image,
+                'content_type' => $item->content_type ?? 'anime',
+                'message' => $newCount === 1
+                    ? 'New episode available!'
+                    : "{$newCount} new episodes available!",
+            ]);
+
+            $lockedItem->update(['last_notified_episode' => $totalEpisodes]);
+        });
     }
 }

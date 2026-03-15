@@ -46,6 +46,13 @@ it('creates notification when new episodes exist', function (): void {
         'anime_id' => 'naruto',
         'message' => '5 new episodes available!',
     ]);
+
+    // Verify last_notified_episode was updated on the watchlist
+    $this->assertDatabaseHas('watchlists', [
+        'user_id' => $user->id,
+        'anime_id' => 'naruto',
+        'last_notified_episode' => 10,
+    ]);
 });
 
 it('does not create notification when episodes are up to date', function (): void {
@@ -81,7 +88,7 @@ it('does not create notification when episodes are up to date', function (): voi
     ]);
 });
 
-it('does not create duplicate notification', function (): void {
+it('does not create duplicate notification when last_notified_episode is set', function (): void {
     Http::fake([
         '*/anime/animekai/info*' => Http::response(['totalEpisodes' => 10, 'episodes' => []]),
     ]);
@@ -94,6 +101,7 @@ it('does not create duplicate notification', function (): void {
         'anime_title' => 'Naruto',
         'status' => 'watching',
         'content_type' => 'anime',
+        'last_notified_episode' => 10,
     ]);
 
     WatchHistory::create([

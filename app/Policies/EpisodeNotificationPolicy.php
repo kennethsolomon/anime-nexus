@@ -13,4 +13,9 @@ final class EpisodeNotificationPolicy
     {
         return $user->id === $notification->user_id;
     }
+
+    public function delete(User $user, EpisodeNotification $notification): bool
+    {
+        return $user->id === $notification->user_id;
+    }
 }

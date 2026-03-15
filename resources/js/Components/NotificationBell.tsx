@@ -67,9 +67,24 @@ export default function NotificationBell() {
         setOpen(false);
     };
 
+    const handleDismiss = (e: React.MouseEvent, notif: Notification) => {
+        e.stopPropagation();
+        router.delete(route('notifications.destroy', { episodeNotification: notif.id }), { preserveScroll: true });
+        setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+        if (!notif.read) {
+            setUnreadCount((c) => Math.max(0, c - 1));
+        }
+    };
+
     const handleMarkAllRead = () => {
         router.post(route('notifications.readAll'), {}, { preserveScroll: true });
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        setUnreadCount(0);
+    };
+
+    const handleClearAll = () => {
+        router.delete(route('notifications.destroyAll'), { preserveScroll: true });
+        setNotifications([]);
         setUnreadCount(0);
     };
 
@@ -101,45 +116,68 @@ export default function NotificationBell() {
                     <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-subtle bg-surface shadow-xl sm:w-96">
                         <div className="flex items-center justify-between border-b border-subtle px-4 py-3">
                             <h3 className="text-sm font-bold text-primary">Notifications</h3>
-                            {unreadCount > 0 && (
-                                <button
-                                    onClick={handleMarkAllRead}
-                                    className="text-xs text-accent hover:text-accent-hover"
-                                >
-                                    Mark all read
-                                </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={handleMarkAllRead}
+                                        className="text-xs text-accent hover:text-accent-hover"
+                                    >
+                                        Mark all read
+                                    </button>
+                                )}
+                                {notifications.length > 0 && (
+                                    <button
+                                        onClick={handleClearAll}
+                                        className="text-xs text-danger hover:text-red-400"
+                                    >
+                                        Clear all
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <div className="max-h-80 overflow-y-auto">
                             {notifications.length > 0 ? (
                                 notifications.map((notif) => (
-                                    <button
+                                    <div
                                         key={notif.id}
-                                        onClick={() => handleClick(notif)}
-                                        className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-input ${
+                                        className={`group relative flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-input ${
                                             !notif.read ? 'bg-accent/5' : ''
                                         }`}
                                     >
-                                        {notif.anime_image && (
-                                            <img
-                                                src={notif.anime_image}
-                                                alt=""
-                                                className="h-10 w-7 shrink-0 rounded object-cover"
-                                            />
-                                        )}
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-medium text-primary">
-                                                {notif.anime_title}
-                                            </p>
-                                            <p className="text-xs text-theme-secondary">{notif.message}</p>
-                                        </div>
-                                        <span className="shrink-0 text-xs text-theme-muted">
-                                            {timeAgo(notif.created_at)}
-                                        </span>
-                                        {!notif.read && (
-                                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
-                                        )}
-                                    </button>
+                                        <button
+                                            onClick={() => handleClick(notif)}
+                                            className="flex min-w-0 flex-1 items-start gap-3"
+                                        >
+                                            {notif.anime_image && (
+                                                <img
+                                                    src={notif.anime_image}
+                                                    alt=""
+                                                    className="h-10 w-7 shrink-0 rounded object-cover"
+                                                />
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-medium text-primary">
+                                                    {notif.anime_title}
+                                                </p>
+                                                <p className="text-xs text-theme-secondary">{notif.message}</p>
+                                            </div>
+                                            <span className="shrink-0 text-xs text-theme-muted">
+                                                {timeAgo(notif.created_at)}
+                                            </span>
+                                            {!notif.read && (
+                                                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDismiss(e, notif)}
+                                            className="absolute right-2 top-2 hidden rounded p-0.5 text-theme-muted transition hover:text-danger group-hover:block"
+                                            title="Dismiss"
+                                        >
+                                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 ))
                             ) : (
                                 <div className="px-4 py-8 text-center text-sm text-theme-muted">
