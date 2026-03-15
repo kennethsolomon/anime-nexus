@@ -26,6 +26,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dark/light theme toggle** — CSS custom properties with localStorage persistence
 - **JS test infrastructure** — Vitest + React Testing Library (8 toast unit tests)
 
+### Fixed
+- Blank page when navigating from Watch to Home via Nexus logo — React hooks were called after early return
+- Stream proxy 403 errors from rotating CDN domains — removed domain allowlist in favor of IP-based SSRF protection
+- Progress/completion saves interfering with Inertia navigation — replaced `router.post()` with `fetch()`
+- Anime not loading on home page — added provider fallback for trending/popular/recent endpoints
+- SSRF bypass via raw IP addresses in proxy URL — IP validation now covers both hostnames and raw IPs
+- Success toast shown on failed episode completion save — now checks `response.ok` before toast
+
 ### Changed
 - Refactored color palette to CSS custom properties for theme switching
 - Updated tailwind.config.js to use CSS variable references
