@@ -29,7 +29,7 @@
 ## Workflow — Follow This Order
 <!-- LOCK -->
 
-**Flow:** Read → Explore → Design → Plan → Branch → Implement → Lint → Test → Security → Review → Finish
+**Flow:** Read → Explore → Design → Plan → Branch → Migrate → Implement → Lint → Test → Security → Review → Finish
 
 Progress is tracked in `tasks/workflow-status.md`. This file persists across conversations.
 
@@ -39,23 +39,22 @@ Progress is tracked in `tasks/workflow-status.md`. This file persists across con
 | 2 | Read Lessons | read `tasks/lessons.md` | required | no |
 | 3 | Explore | `/brainstorm` | required | no |
 | 4 | Design | `/frontend-design` | optional (confirm to skip) | no |
-| 5 | Plan | outline in `tasks/progress.md` | required | no |
-| 6 | Branch | create feature branch | required | no |
+| 5 | Plan | `/write-plan` | required | no |
+| 6 | Branch | `/branch` | required | no |
 | 7 | Migrate | `/schema-migrate` | optional (confirm to skip) | no |
-| 8 | Implement | write the code | required | no |
+| 8 | Implement | `/execute-plan` | required | no |
 | 9 | Commit | `/smart-commit` | required | no |
 | 10 | Lint | `/laravel-lint` | required | yes — must be clean |
 | 11 | Commit | `/smart-commit` | conditional (skip if lint was clean) | no |
 | 12 | Test | `/laravel-test` | required | yes — 100% coverage required |
 | 13 | Commit | `/smart-commit` | conditional (skip if no test fixes) | no |
-| 14 | Debug | `/debug` | optional (confirm to skip) | no |
-| 15 | Security | `/security-check` | required | yes — must reach 0 issues |
-| 16 | Commit | `/smart-commit` | conditional (skip if security was clean) | no |
-| 17 | Review | `/review` | required | yes — must reach 0 issues |
-| 18 | Commit | `/smart-commit` | conditional (skip if review was clean) | no |
-| 19 | Update | mark done in `tasks/todo.md`, log in `tasks/progress.md` | required | no |
-| 20 | Finalize | `/finish-feature` | required | no |
-| 21 | Release | `/release` | optional (confirm to skip) | no |
+| 14 | Security | `/security-check` | required | yes — must reach 0 issues |
+| 15 | Commit | `/smart-commit` | conditional (skip if security was clean) | no |
+| 16 | Review | `/review` | required | yes — must reach 0 issues |
+| 17 | Commit | `/smart-commit` | conditional (skip if review was clean) | no |
+| 18 | Update | `/update-task` | required | no |
+| 19 | Finalize | `/finish-feature` | required | no |
+| 20 | Release | `/release` | optional (confirm to skip) | no |
 
 ### Step Details
 
@@ -63,23 +62,22 @@ Progress is tracked in `tasks/workflow-status.md`. This file persists across con
 2.  **Read** `tasks/lessons.md` — review past corrections before writing code
 3.  **Explore** — run `/brainstorm` to clarify requirements, constraints, and approach. No code in this step.
 4.  **Design** — run `/frontend-design` for UI mockup. No code — design only. Skip if backend-only.
-5.  **Plan** — outline approach in `tasks/progress.md` using brainstorm + design outputs. No code in this step.
-6.  **Branch** — create a feature branch to isolate work from main
+5.  **Plan** — run `/write-plan` to write a decision-complete plan into `tasks/todo.md` using brainstorm + design outputs. No code in this step.
+6.  **Branch** — run `/branch` to create a feature branch auto-named from the current task.
 7.  **Migrate** — run `/schema-migrate` for database changes. Skip if no schema changes needed.
-8.  **Implement** — write the code
+8.  **Implement** — run `/execute-plan` to execute `tasks/todo.md` checkboxes in small batches, logging progress to `tasks/progress.md`.
 9.  **Commit** — run `/smart-commit` to commit implementation
 10. **Lint** — run `/laravel-lint` (Pint → PHPStan → Rector). Fix all issues immediately, then re-run until clean. Do not ask to re-run — fix and re-run automatically.
 11. **Commit** — run `/smart-commit` if lint required fixes. Auto-skip if lint was clean.
 12. **Test** — run `/laravel-test`. **100% test coverage is required for both BE and FE.** Before running tests, write tests for all new code — BE: controllers, actions, jobs, models (Pest); FE: pages, components, hooks (Vitest + React Testing Library). Fix any failures immediately, then re-run until all pass with full coverage. Do not ask to re-run — fix and re-run automatically.
 13. **Commit** — run `/smart-commit` if tests required fixes. Auto-skip if tests passed first try.
-14. **Debug** — run `/debug` for structured investigation. Skip if no issues found.
-15. **Security** — run `/security-check`. Must reach 0 issues across all severities. Fix issues immediately, commit, then re-run. Loop until clean.
-16. **Commit** — run `/smart-commit` if security required fixes. Auto-skip if clean.
-17. **Review** — run `/review`. Must reach 0 issues including nitpicks. Fix issues immediately, commit, then re-run. Loop until clean.
-18. **Commit** — run `/smart-commit` if review required fixes. Auto-skip if clean.
-19. **Update** — mark task done in `tasks/todo.md`, log progress in `tasks/progress.md`
-20. **Finalize** — run `/finish-feature` for changelog + PR
-21. **Release** — run `/release` if deploying. Skip if not ready.
+14. **Security** — run `/security-check`. Must reach 0 issues across all severities. Fix issues immediately, commit, then re-run. Loop until clean.
+15. **Commit** — run `/smart-commit` if security required fixes. Auto-skip if clean.
+16. **Review** — run `/review`. Must reach 0 issues including nitpicks. Fix issues immediately, commit, then re-run. Loop until clean.
+17. **Commit** — run `/smart-commit` if review required fixes. Auto-skip if clean.
+18. **Update** — run `/update-task` to mark the task done in `tasks/todo.md` and log completion to `tasks/progress.md`.
+19. **Finalize** — run `/finish-feature` for changelog + PR
+20. **Release** — run `/release` if deploying. Skip if not ready.
 
 ### Workflow Tracker Rules
 
@@ -92,18 +90,18 @@ Progress is tracked in `tasks/workflow-status.md`. This file persists across con
    - Add relevant Notes (e.g., "clean on attempt 2", "backend-only, no UI")
    - Move `>> next <<` to the next pending step
 
-3. **Optional steps** (4, 7, 14, 21): Ask the user "Skip [step]?" and require explicit confirmation. Record the reason in Notes.
+3. **Optional steps** (4, 7, 20): Ask the user "Skip [step]?" and require explicit confirmation. Record the reason in Notes.
 
-4. **Conditional commits** (11, 13, 16, 18): Auto-skip if no changes were made. Record reason (e.g., "lint was clean", "tests passed first try").
+4. **Conditional commits** (11, 13, 15, 17): Auto-skip if no changes were made. Record reason (e.g., "lint was clean", "tests passed first try").
 
-5. **Loop steps are HARD GATES** (10, 12, 15, 17): These steps BLOCK all forward progress until they pass clean. Fix issues immediately and re-run. Do NOT ask the user to re-run — fix and re-run automatically. Track attempt number in Notes (e.g., "clean on attempt 3").
+5. **Loop steps are HARD GATES** (10, 12, 14, 16): These steps BLOCK all forward progress until they pass clean. Fix issues immediately and re-run. Do NOT ask the user to re-run — fix and re-run automatically. Track attempt number in Notes (e.g., "clean on attempt 3").
    - **Step 10 (Lint)**: Pint must format clean, PHPStan must report 0 errors, Rector must suggest 0 changes. ALL THREE must pass — not just one.
    - **Step 12 (Test)**: Both BE (Pest) and FE (Vitest) must pass with 100% coverage on new code.
-   - **Step 15 (Security)**: 0 issues across all severities.
-   - **Step 17 (Review)**: 0 issues including nitpicks.
+   - **Step 14 (Security)**: 0 issues across all severities.
+   - **Step 16 (Review)**: 0 issues including nitpicks.
    - **DO NOT mark these steps as `done` until every check passes.** If even one tool fails, the step is NOT done. Never proceed to the next step with errors remaining.
 
-6. **Never skip steps without confirmation.** Steps cannot run out of order. Quality gate steps (10, 12, 15, 17) can NEVER be skipped.
+6. **Never skip steps without confirmation.** Steps cannot run out of order. Quality gate steps (10, 12, 14, 16) can NEVER be skipped.
 
 7. **Never auto-advance.** When one step completes, stop and tell the user which step is next. Do not proceed automatically.
 
@@ -201,7 +199,7 @@ Use `run_in_background: true` for tasks that don't block your next step:
 | `/security-check` | OWASP security audit on changed files |
 | `/frontend-design` | UI mockup before implementation |
 | `/schema-migrate` | Database migration analysis |
-| `/debug` | Structured bug investigation |
+
 | `/review` | Self-review of branch changes |
 | `/smart-commit` | Conventional commit with approval |
 | `/finish-feature` | Changelog + PR creation |

@@ -20,6 +20,6 @@
 | 16 | Commit | `/smart-commit` | skipped | Security was clean |
 | 17 | Review | `/review` | done | 0 critical, 0 warning, 1 nitpick (pre-existing) |
 | 18 | Commit | `/smart-commit` | done | 312c00a — nitpick fix |
-| 19 | Update | mark done in tasks | not yet | |
-| 20 | Finalize | `/finish-feature` | not yet | |
-| 21 | Release | `/release` | not yet | |
+| 19 | Update | mark done in tasks | done | 1abded4 |
+| 20 | Finalize | `/finish-feature` | done | PR #6 created |
+| 21 | Release | `/release` | skipped | User requested skip |

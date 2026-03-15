@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1773560359473" clover="3.2.0">
+  <project timestamp="1773560359473" name="All files">
+    <metrics statements="61" coveredstatements="47" conditionals="20" coveredconditionals="8" methods="23" coveredmethods="20" elements="104" coveredelements="75" complexity="0" loc="61" ncloc="61" packages="1" files="3" classes="3"/>
+    <file name="Toast.tsx" path="/Users/kennethsolomon/Herd/watch-anime/resources/js/Components/Toast.tsx">
+      <metrics statements="33" coveredstatements="19" conditionals="14" coveredconditionals="2" methods="10" coveredmethods="7"/>
+      <line num="4" count="1" type="stmt"/>
+      <line num="22" count="1" type="stmt"/>
+      <line num="34" count="11" type="stmt"/>
+      <line num="35" count="11" type="stmt"/>
+      <line num="36" count="11" type="stmt"/>
+      <line num="37" count="11" type="stmt"/>
+      <line num="38" count="11" type="stmt"/>
+      <line num="41" count="11" type="stmt"/>
+      <line num="42" count="9" type="stmt"/>
+      <line num="43" count="9" type="stmt"/>
+      <line num="47" count="11" type="stmt"/>
+      <line num="48" count="2" type="stmt"/>
+      <line num="49" count="2" type="stmt"/>
+      <line num="53" count="11" type="stmt"/>
+      <line num="54" count="0" type="stmt"/>
+      <line num="55" count="0" type="stmt"/>
+      <line num="58" count="11" type="stmt"/>
+      <line num="59" count="0" type="cond" truecount="0" falsecount="2"/>
+      <line num="60" count="0" type="stmt"/>
+      <line num="61" count="0" type="stmt"/>
+      <line num="62" count="0" type="cond" truecount="0" falsecount="4"/>
+      <line num="63" count="0" type="stmt"/>
+      <line num="64" count="0" type="stmt"/>
+      <line num="68" count="11" type="stmt"/>
+      <line num="69" count="0" type="cond" truecount="0" falsecount="2"/>
+      <line num="70" count="0" type="stmt"/>
+      <line num="71" count="0" type="cond" truecount="0" falsecount="2"/>
+      <line num="72" count="0" type="stmt"/>
+      <line num="73" count="0" type="stmt"/>
+      <line num="75" count="0" type="stmt"/>
+      <line num="78" count="11" type="stmt"/>
+      <line num="96" count="1" type="stmt"/>
+      <line num="97" count="1" type="stmt"/>
+    </file>
+    <file name="ToastContainer.tsx" path="/Users/kennethsolomon/Herd/watch-anime/resources/js/Components/ToastContainer.tsx">
+      <metrics statements="3" coveredstatements="3" conditionals="2" coveredconditionals="2" methods="2" coveredmethods="2"/>
+      <line num="10" count="17" type="cond" truecount="2" falsecount="0"/>
+      <line num="12" count="7" type="stmt"/>
+      <line num="19" count="9" type="stmt"/>
+    </file>
+    <file name="ToastContext.tsx" path="/Users/kennethsolomon/Herd/watch-anime/resources/js/Components/ToastContext.tsx">
+      <metrics statements="25" coveredstatements="25" conditionals="4" coveredconditionals="4" methods="11" coveredmethods="11"/>
+      <line num="21" count="1" type="stmt"/>
+      <line num="23" count="1" type="stmt"/>
+      <line num="26" count="17" type="stmt"/>
+      <line num="28" count="17" type="stmt"/>
+      <line num="29" count="3" type="stmt"/>
+      <line num="32" count="17" type="stmt"/>
+      <line num="34" count="10" type="stmt"/>
+      <line num="35" count="10" type="stmt"/>
+      <line num="37" count="10" type="stmt"/>
+      <line num="38" count="10" type="stmt"/>
+      <line num="40" count="10" type="cond" truecount="2" falsecount="0"/>
+      <line num="41" count="1" type="stmt"/>
+      <line num="43" count="9" type="stmt"/>
+      <line num="47" count="10" type="stmt"/>
+      <line num="52" count="17" type="stmt"/>
+      <line num="53" count="6" type="stmt"/>
+      <line num="56" count="17" type="stmt"/>
+      <line num="57" count="2" type="stmt"/>
+      <line num="60" count="17" type="stmt"/>
+      <line num="61" count="2" type="stmt"/>
+      <line num="65" count="17" type="stmt"/>
+      <line num="76" count="22" type="stmt"/>
+      <line num="77" count="22" type="cond" truecount="2" falsecount="0"/>
+      <line num="78" count="4" type="stmt"/>
+      <line num="80" count="17" type="stmt"/>
+    </file>
+  </project>
+</coverage>
