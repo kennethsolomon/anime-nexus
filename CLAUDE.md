@@ -70,7 +70,7 @@ Progress is tracked in `tasks/workflow-status.md`. This file persists across con
 9.  **Commit** — run `/smart-commit` to commit implementation
 10. **Lint** — run `/laravel-lint` (Pint → PHPStan → Rector). Fix all issues immediately, then re-run until clean. Do not ask to re-run — fix and re-run automatically.
 11. **Commit** — run `/smart-commit` if lint required fixes. Auto-skip if lint was clean.
-12. **Test** — run `/laravel-test`. **100% test coverage is required.** Before running tests, write tests for all new code (controllers, actions, jobs, models, etc.). Fix any failures immediately, then re-run until all pass with full coverage. Do not ask to re-run — fix and re-run automatically.
+12. **Test** — run `/laravel-test`. **100% test coverage is required for both BE and FE.** Before running tests, write tests for all new code — BE: controllers, actions, jobs, models (Pest); FE: pages, components, hooks (Vitest + React Testing Library). Fix any failures immediately, then re-run until all pass with full coverage. Do not ask to re-run — fix and re-run automatically.
 13. **Commit** — run `/smart-commit` if tests required fixes. Auto-skip if tests passed first try.
 14. **Debug** — run `/debug` for structured investigation. Skip if no issues found.
 15. **Security** — run `/security-check`. Must reach 0 issues across all severities. Fix issues immediately, commit, then re-run. Loop until clean.
@@ -103,6 +103,16 @@ Progress is tracked in `tasks/workflow-status.md`. This file persists across con
 7. **Never auto-advance.** When one step completes, stop and tell the user which step is next. Do not proceed automatically.
 
 8. **Never write code during design or plan phases.** Steps 1-5 are reading/exploring/planning/design only — no code, no file edits (except `tasks/` files).
+
+9. **Step completion summary is NON-NEGOTIABLE.** After finishing ANY step, you MUST output a summary block in this exact format before stopping:
+
+```
+--- Step [#] [Name]: [done/skipped/partial] ---
+Summary: [1-2 sentence summary of what was done]
+Next step: [#] [Name] — run `[command]`
+```
+
+This tells the user exactly what happened and what to do next. Never finish a step silently.
 
 ### Tracker Reset
 
