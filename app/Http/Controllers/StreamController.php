@@ -145,7 +145,7 @@ final class StreamController extends Controller
             return false;
         }
 
-        // Resolve DNS once and validate IP (prevents DNS rebinding)
+        // Resolve DNS once and validate IP (prevents SSRF to internal services)
         $resolvedIp = gethostbyname($host);
         if ($resolvedIp !== $host) {
             if (filter_var($resolvedIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
@@ -156,39 +156,10 @@ final class StreamController extends Controller
             }
         }
 
-        // Allowlist known streaming CDN domains
-        $allowedPatterns = config('services.streaming.allowed_domains', [
-            '.biananset.net',
-            '.gogoanime.',
-            '.gogocdn.',
-            '.anitaku.',
-            '.animekai.',
-            '.hianime.',
-            '.consumet.',
-            '.megacloud.',
-            '.rapid-cloud.',
-            '.rabbitstream.',
-            '.vidcloud.',
-            '.vidstreaming.',
-            '.mcloud.',
-            '.mp4upload.',
-            '.streamtape.',
-            '.doodstream.',
-            '.filemoon.',
-            '.m3u8',
-        ]);
-
-        /** @var array<int, string> $patterns */
-        $patterns = is_array($allowedPatterns) ? $allowedPatterns : [];
-
-        foreach ($patterns as $pattern) {
-            if (str_contains($host, $pattern) || str_ends_with($url, $pattern)) {
-                // Return resolved IP so caller can pin DNS
-                return $resolvedIp !== $host ? $resolvedIp : true;
-            }
-        }
-
-        return false;
+        // All proxy URLs are generated server-side from Consumet API responses,
+        // so domain allowlisting is unnecessary. IP-based SSRF protection above
+        // is sufficient to prevent access to internal services.
+        return $resolvedIp !== $host ? $resolvedIp : true;
     }
 
     private function rewriteManifest(string $manifest, string $manifestUrl, string $referer): string

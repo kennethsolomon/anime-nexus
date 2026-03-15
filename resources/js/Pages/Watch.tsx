@@ -59,10 +59,6 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
     const toast = useToast();
     const loading = usePageLoading();
 
-    if (loading) {
-        return <SkeletonPlayer />;
-    }
-
     const source =
         streaming.sources?.find((s) => s.quality === 'default' || s.quality === 'auto') ||
         streaming.sources?.find((s) => s.isM3U8) ||
@@ -81,9 +77,15 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
     const saveProgress = useCallback(
         (seconds: number) => {
             if (!auth?.user || !currentEpisode) return;
-            router.post(
-                route('history.store'),
-                {
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            fetch(route('history.store'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({
                     anime_id: anime.id,
                     anime_title: anime.title,
                     anime_image: anime.image,
@@ -92,18 +94,23 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                     progress_seconds: seconds,
                     completed: false,
                     content_type: 'anime',
-                },
-                { preserveScroll: true, preserveState: true },
-            );
+                }),
+            }).catch(() => {});
         },
         [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode],
     );
 
     const handleEnded = useCallback(() => {
         if (auth?.user && currentEpisode) {
-            router.post(
-                route('history.store'),
-                {
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            fetch(route('history.store'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({
                     anime_id: anime.id,
                     anime_title: anime.title,
                     anime_image: anime.image,
@@ -112,13 +119,10 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                     progress_seconds: 0,
                     completed: true,
                     content_type: 'anime',
-                },
-                {
-                    preserveScroll: true,
-                    preserveState: true,
-                    onSuccess: () => toast.success(`Episode ${currentEpisode.number} completed`),
-                },
-            );
+                }),
+            }).then(() => {
+                toast.success(`Episode ${currentEpisode.number} completed`);
+            }).catch(() => {});
         }
         if (nextEpisode) {
             router.get(
@@ -129,6 +133,10 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
             );
         }
     }, [auth, anime.id, anime.title, anime.image, episodeId, currentEpisode, nextEpisode, toast]);
+
+    if (loading) {
+        return <SkeletonPlayer />;
+    }
 
     return (
         <>
