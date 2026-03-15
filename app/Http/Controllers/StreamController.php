@@ -154,9 +154,6 @@ final class StreamController extends Controller
             if (filter_var($ipToCheck, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
                 return false;
             }
-            if (str_starts_with($ipToCheck, '127.') || $ipToCheck === '::1') {
-                return false;
-            }
         }
 
         // All proxy URLs are generated server-side from Consumet API responses,
