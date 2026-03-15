@@ -56,7 +56,7 @@ it('returns HasMany relationship for User favorites', function (): void {
 
     expect($favorites)->toHaveCount(1)
         ->and($favorites->first()->anime_id)->toBe('fav-anime')
-        ->and($user->favorites())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        ->and($user->favorites())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });
 
 it('accesses EpisodeNotification user relationship', function (): void {
@@ -124,5 +124,5 @@ it('casts WatchHistory attributes correctly', function (): void {
     expect($history->episode_number)->toBe(3)->and($history->episode_number)->toBeInt()
         ->and($history->progress_seconds)->toBe(120)->and($history->progress_seconds)->toBeInt()
         ->and($history->completed)->toBeTrue()->and($history->completed)->toBeBool()
-        ->and($history->watched_at)->toBeInstanceOf(\Carbon\CarbonImmutable::class);
+        ->and($history->watched_at)->toBeInstanceOf(Carbon\CarbonImmutable::class);
 });

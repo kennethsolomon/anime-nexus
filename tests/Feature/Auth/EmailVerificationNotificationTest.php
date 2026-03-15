@@ -41,7 +41,7 @@ test('sends verification notification to unverified users', function (): void {
 test('already verified user is redirected when visiting verification URL', function (): void {
     $user = User::factory()->create(); // verified by default
 
-    $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+    $verificationUrl = Illuminate\Support\Facades\URL::temporarySignedRoute(
         'verification.verify',
         now()->addMinutes(60),
         ['id' => $user->id, 'hash' => sha1((string) $user->email)]
@@ -49,7 +49,7 @@ test('already verified user is redirected when visiting verification URL', funct
 
     $response = $this->actingAs($user)->get($verificationUrl);
 
-    $response->assertRedirect(route('home', absolute: false) . '?verified=1');
+    $response->assertRedirect(route('home', absolute: false).'?verified=1');
 });
 
 /*

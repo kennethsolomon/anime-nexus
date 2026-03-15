@@ -476,7 +476,7 @@ test('cached serves stale cache when ConnectionException is thrown', function ()
         ->andReturn($staleData);
 
     Cache::shouldReceive('remember')
-        ->with($cacheKey, 86400, \Mockery::type(\Closure::class))
+        ->with($cacheKey, 86400, Mockery::type(Closure::class))
         ->once()
         ->andThrow(new ConnectionException('Connection refused'));
 
@@ -500,7 +500,7 @@ test('cached returns error when no stale cache and ConnectionException is thrown
         ->andReturnNull();
 
     Cache::shouldReceive('remember')
-        ->with($cacheKey, 86400, \Mockery::type(\Closure::class))
+        ->with($cacheKey, 86400, Mockery::type(Closure::class))
         ->once()
         ->andThrow(new ConnectionException('Connection refused'));
 
