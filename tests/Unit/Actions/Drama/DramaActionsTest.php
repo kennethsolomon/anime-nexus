@@ -46,7 +46,7 @@ it('GetDramaTrending passes custom page number', function (): void {
 
     expect($result['results'])->toBe([]);
 
-    Http::assertSent(fn ($request): bool => str_contains($request->url(), 'page=3'));
+    Http::assertSent(fn ($request): bool => str_contains((string) $request->url(), 'page=3'));
 });
 
 it('SearchDrama delegates to consumet service', function (): void {
@@ -79,7 +79,7 @@ it('SearchDrama passes custom page number', function (): void {
     $action = new SearchDrama($consumet);
     $result = $action->handle('goblin', 2);
 
-    Http::assertSent(fn ($request): bool => str_contains($request->url(), 'page=2'));
+    Http::assertSent(fn ($request): bool => str_contains((string) $request->url(), 'page=2'));
 });
 
 it('GetDramaDetail delegates to consumet service with default provider', function (): void {
@@ -98,7 +98,7 @@ it('GetDramaDetail delegates to consumet service with default provider', functio
     expect($result['id'])->toBe('drama-456')
         ->and($result['title'])->toBe('Test Drama');
 
-    Http::assertSent(fn ($request): bool => str_contains($request->url(), '/movies/flixhq/info'));
+    Http::assertSent(fn ($request): bool => str_contains((string) $request->url(), '/movies/flixhq/info'));
 });
 
 it('GetDramaDetail passes custom provider', function (): void {
@@ -115,5 +115,5 @@ it('GetDramaDetail passes custom provider', function (): void {
 
     expect($result['id'])->toBe('drama-789');
 
-    Http::assertSent(fn ($request): bool => str_contains($request->url(), '/movies/goku/info'));
+    Http::assertSent(fn ($request): bool => str_contains((string) $request->url(), '/movies/goku/info'));
 });

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Jobs\CheckNewEpisodes;
-use App\Models\EpisodeNotification;
 use App\Models\User;
 use App\Models\WatchHistory;
 use App\Models\Watchlist;
@@ -34,7 +33,7 @@ it('logs warning and continues when checkItem throws an exception', function ():
     $callCount = 0;
     Http::fake(function ($request) use (&$callCount) {
         $callCount++;
-        if (str_contains($request->url(), 'id=broken-anime')) {
+        if (str_contains((string) $request->url(), 'id=broken-anime')) {
             throw new RuntimeException('API down');
         }
 
@@ -114,7 +113,7 @@ it('calls getDramaInfo for drama content type items', function (): void {
     $consumet = app(ConsumetService::class);
     (new CheckNewEpisodes($user->id))->handle($consumet);
 
-    Http::assertSent(fn ($request): bool => str_contains($request->url(), '/movies/flixhq/info'));
+    Http::assertSent(fn ($request): bool => str_contains((string) $request->url(), '/movies/flixhq/info'));
 
     $this->assertDatabaseHas('episode_notifications', [
         'user_id' => $user->id,
