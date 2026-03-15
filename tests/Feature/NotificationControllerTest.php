@@ -104,3 +104,82 @@ it('marks all notifications as read', function (): void {
 
     expect(EpisodeNotification::where('user_id', $user->id)->where('read', false)->count())->toBe(0);
 });
+
+it('deletes a single notification', function (): void {
+    $user = User::factory()->create();
+
+    $notif = EpisodeNotification::create([
+        'user_id' => $user->id,
+        'anime_id' => 'naruto',
+        'anime_title' => 'Naruto',
+        'content_type' => 'anime',
+        'message' => 'New episode!',
+        'read' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->delete(route('notifications.destroy', ['episodeNotification' => $notif->id]))
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('episode_notifications', ['id' => $notif->id]);
+});
+
+it('prevents deleting another users notification', function (): void {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+
+    $notif = EpisodeNotification::create([
+        'user_id' => $other->id,
+        'anime_id' => 'naruto',
+        'anime_title' => 'Naruto',
+        'content_type' => 'anime',
+        'message' => 'New episode!',
+        'read' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->delete(route('notifications.destroy', ['episodeNotification' => $notif->id]))
+        ->assertStatus(403);
+
+    $this->assertDatabaseHas('episode_notifications', ['id' => $notif->id]);
+});
+
+it('deletes all notifications for user', function (): void {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+
+    EpisodeNotification::create([
+        'user_id' => $user->id,
+        'anime_id' => 'naruto',
+        'anime_title' => 'Naruto',
+        'content_type' => 'anime',
+        'message' => 'New!',
+        'read' => false,
+    ]);
+
+    EpisodeNotification::create([
+        'user_id' => $user->id,
+        'anime_id' => 'bleach',
+        'anime_title' => 'Bleach',
+        'content_type' => 'anime',
+        'message' => 'New!',
+        'read' => true,
+    ]);
+
+    // Other user's notification should not be deleted
+    EpisodeNotification::create([
+        'user_id' => $other->id,
+        'anime_id' => 'naruto',
+        'anime_title' => 'Naruto',
+        'content_type' => 'anime',
+        'message' => 'New!',
+        'read' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->delete(route('notifications.destroyAll'))
+        ->assertRedirect();
+
+    expect(EpisodeNotification::where('user_id', $user->id)->count())->toBe(0);
+    expect(EpisodeNotification::where('user_id', $other->id)->count())->toBe(1);
+});

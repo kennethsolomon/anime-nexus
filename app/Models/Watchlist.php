@@ -17,7 +17,18 @@ final class Watchlist extends Model
         'anime_image',
         'status',
         'content_type',
+        'last_notified_episode',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'last_notified_episode' => 'integer',
+        ];
+    }
 
     /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo

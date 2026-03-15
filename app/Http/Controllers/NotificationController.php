@@ -51,4 +51,23 @@ final class NotificationController extends Controller
 
         return back();
     }
+
+    public function destroy(Request $request, EpisodeNotification $episodeNotification): RedirectResponse
+    {
+        $this->authorize('delete', $episodeNotification);
+
+        $episodeNotification->delete();
+
+        return back();
+    }
+
+    public function destroyAll(Request $request): RedirectResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        EpisodeNotification::where('user_id', $user->id)->delete();
+
+        return back();
+    }
 }
