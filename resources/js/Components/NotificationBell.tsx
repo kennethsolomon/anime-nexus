@@ -37,7 +37,10 @@ export default function NotificationBell() {
                 setNotifications(data.notifications || []);
                 setUnreadCount(data.unreadCount || 0);
             })
-            .catch(() => {});
+            .catch(() => {
+                setNotifications([]);
+                setUnreadCount(0);
+            });
     }, []);
 
     // Close on outside click
