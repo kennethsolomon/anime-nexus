@@ -85,10 +85,7 @@ function WatchContent({ anime, streaming, episodeId, progress }: WatchProps) {
                     ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
                 },
                 body: JSON.stringify(data),
-            }).then((res) => res.ok).catch((err) => {
-                console.warn('Failed to save progress:', err);
-                return false;
-            });
+            }).then((res) => res.ok).catch(() => false);
         },
         [],
     );

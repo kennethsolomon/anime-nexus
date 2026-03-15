@@ -25,9 +25,6 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Unit/Actions');
 
-pest()->extend(TestCase::class)
-    ->in('Unit/Services');
-
 /*
 |--------------------------------------------------------------------------
 | Expectations
